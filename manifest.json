@@ -1,0 +1,35 @@
+{
+  "format": 1,
+  "license": {
+    "type": "MIT",
+    "url": "https://www.oandgexample.com/license/"
+  },
+  "developer": {
+    "authors": []
+  },
+  "application": {
+    "type": "ui",
+    "key": "big-data-energy.npt_and_lessons_learned_analysis.ui",
+    "visibility": "private",
+    "name": "NPT and Lessons Learned Analysis",
+    "category": "wellDesign",
+    "segments": [
+      "drilling"
+    ],
+    "ui": {
+      "initial_size": {
+        "w": 4,
+        "h": 10
+      }
+    }
+  },
+  "settings": {
+    "entrypoint": {
+      "file": "src/index.js",
+      "function": "handler"
+    },
+    "environment": {},
+    "runtime": "ui"
+  },
+  "datasets": {}
+}
