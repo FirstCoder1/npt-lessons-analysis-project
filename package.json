@@ -12,7 +12,7 @@
     "postcss-loader": "4.1.0"
   },
   "dependencies": {
-    "@corva/ui": "latest",
+    "@corva/ui": "^0.14.0-12",
     "@material-ui/core": "4.11.2",
     "@material-ui/icons": "4.9.1",
     "@material-ui/lab": "4.0.0-alpha.57",
@@ -25,6 +25,7 @@
     "mapbox.js": "3.2.1",
     "moment": "2.23.0",
     "moment-timezone": "0.5.23",
+    "numeral": "2.0.6",
     "prop-types": "^15.6.1",
     "react": "17.0.1",
     "react-dom": "17.0.1"
