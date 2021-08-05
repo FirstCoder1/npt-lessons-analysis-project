@@ -2,7 +2,7 @@ import { get } from 'lodash';
 
 import { getUnitPreference, getUnitDescription, convertValue, metricsUtils } from '@corva/ui/utils';
 
-import { TABLE_NPT_LIST } from '../constants';
+import { TABLE_LIST } from '../constants';
 
 const { getMetricUnitDisplay, getConvertedMetricValue } = metricsUtils;
 
@@ -16,7 +16,7 @@ export function getUnit(key) {
     return system === 'imperial' ? '(in)' : '(mm)';
   }
 
-  const metricConfig = TABLE_NPT_LIST.find(item => item.key === key);
+  const metricConfig = TABLE_LIST.find(item => item.key === key);
   const unitDisplay = getMetricUnitDisplay(metricConfig);
   return unitDisplay ? `(${unitDisplay})` : '';
 }
@@ -59,7 +59,7 @@ export function getUnitConvertedValue(value, key, isMotorData = false) {
     return convertValue(value, 'anglePerLength', 'dp100f');
   }
 
-  const metricConfig = TABLE_NPT_LIST.find(item => item.key === key);
+  const metricConfig = TABLE_LIST.find(item => item.key === key);
   return getConvertedMetricValue(value, metricConfig);
 }
 

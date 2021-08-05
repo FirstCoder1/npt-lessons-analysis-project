@@ -2,10 +2,7 @@ import { memo, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc';
 import { FormControlLabel, Checkbox, Typography, makeStyles } from '@material-ui/core';
-import {
-  Clear as ClearIcon,
-  Done as DoneIcon,
-} from '@material-ui/icons';
+import { Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';
 
 const useStyles = makeStyles({
   container: {
@@ -72,6 +69,7 @@ const SortableRow = SortableElement(({ item, onToggle }) => {
           />
         }
         label={item.label}
+        disabled={!item.active}
       />
     </div>
   );
@@ -97,13 +95,13 @@ SortableList.propTypes = {
   onToggleRow: PropTypes.func.isRequired,
 };
 
-function TableSettings({ eventKind, tableSettings, onChangeTableSettings }) {
+function TableSettings({ tableSettings, onChangeTableSettings }) {
   const classes = useStyles();
 
   const isAllSelected = useMemo(() => {
     let allChecked = true;
     for (let i = 0; i < tableSettings.length; i += 1) {
-      if (!tableSettings[i].show) {
+      if (!tableSettings[i].show && tableSettings[i].active) {
         allChecked = false;
         break;
       }
@@ -134,9 +132,11 @@ function TableSettings({ eventKind, tableSettings, onChangeTableSettings }) {
   };
 
   const handleSelectAll = () => {
-    onChangeTableSettings(tableSettings.map(item => ({ ...item, show: true })));
+    onChangeTableSettings(
+      tableSettings.map(item => (item.active ? { ...item, show: true } : item))
+    );
   };
-console.log('eventKind=', eventKind);
+
   return (
     <div className={classes.container}>
       <div className={classes.tableHeader}>
@@ -169,10 +169,10 @@ console.log('eventKind=', eventKind);
 }
 
 TableSettings.propTypes = {
-  eventKind: PropTypes.string.isRequired,
   tableSettings: PropTypes.arrayOf(
     PropTypes.shape({
       show: PropTypes.bool.isRequired,
+      active: PropTypes.bool.isRequired,
     })
   ).isRequired,
   onChangeTableSettings: PropTypes.func.isRequired,

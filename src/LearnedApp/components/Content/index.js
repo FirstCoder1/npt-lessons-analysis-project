@@ -62,7 +62,6 @@ const useStyles = makeStyles({
 function Content({
   isMobile,
   isDrawerOpen,
-  eventKind,
   data,
   initialData,
   tableSettings,
@@ -160,7 +159,6 @@ function Content({
 
         {isOpenSettingsPopover && (
           <Settings
-            eventKind={eventKind}
             tableSettings={tableSettings}
             onClose={handleCloseSettingsPopover}
             onSave={handleSaveSettings}
@@ -200,7 +198,6 @@ function Content({
 Content.propTypes = {
   isMobile: PropTypes.bool.isRequired,
   isDrawerOpen: PropTypes.bool.isRequired,
-  eventKind: PropTypes.string.isRequired,
   showWellFullName: PropTypes.bool.isRequired,
   onChangeShowWellFullName: PropTypes.func.isRequired,
   data: PropTypes.arrayOf(PropTypes.shape({})),

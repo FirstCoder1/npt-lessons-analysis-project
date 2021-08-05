@@ -22,8 +22,6 @@ import { getUnit } from '../../../utils/unitConversion';
 import { HIGHLIGHTING_METRICS } from '../../../constants';
 import LearnTableRow from './LearnTableRow';
 
-const PX_PER_RATIO = 50;
-
 const useStyles = makeStyles({
   headerCell: {
     padding: '6px 0 6px 10px',

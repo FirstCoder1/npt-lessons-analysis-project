@@ -64,8 +64,8 @@ function ExploreApp({
   const offsetWellIds = useMemo(() => {
     const selectedWellIds = [
       ...(offsetSetting.selectedWellIds || []),
-    ...(get(offsetSetting, 'bicWellIds') || []),
-    ...(get(offsetSetting, 'bicManualWellIds') || []),
+      ...(get(offsetSetting, 'bicWellIds') || []),
+      ...(get(offsetSetting, 'bicManualWellIds') || []),
     ];
     return selectedWellIds;
   }, [offsetSetting]);
@@ -203,6 +203,25 @@ function ExploreApp({
     removedBhas,
     onSettingsChange
   );
+
+  // Update table settings
+  useEffect(() => {
+    let newSetting = [];
+    if (eventKind === 'all') {
+      newSetting = tableSettings.map(item => ({ ...item, active: true }));
+    } else if (eventKind === 'npt' || eventKind === 'lessons') {
+      newSetting = tableSettings.map(item =>
+        item.kind === eventKind || item.kind === 'all'
+          ? { ...item, active: true }
+          : { ...item, show: false, active: false }
+      );
+    } else {
+      newSetting = tableSettings.map(item =>
+        item.kind !== 'all' ? { ...item, show: false, active: false } : item
+      );
+    }
+    setTableSettings(newSetting);
+  }, [eventKind]);
 
   const handleToggleDrawer = useCallback(() => {
     setIsDrawerOpen(prev => !prev);
@@ -368,7 +387,7 @@ function ExploreApp({
           mdRange={mdRange}
           inclinationFilter={adjustedInclinationFilter}
           inclinationRange={inclinationRange}
-          onChangeEventKind={handleChangeEventKind}
+          handleChangeEventKind={handleChangeEventKind}
           oneRunBhaFilter={oneRunBhaFilter}
           onChangeCoRelationFilters={handleChangeCoRelationFilters}
           onChangeRssFilter={handleChangeRssFilter}
@@ -384,7 +403,6 @@ function ExploreApp({
             <Content
               isMobile={isMobile}
               isDrawerOpen={isDrawerOpen}
-              eventKind={eventKind}
               data={metricsData}
               initialData={initialData}
               tableSettings={tableSettings}

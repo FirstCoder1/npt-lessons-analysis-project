@@ -102,7 +102,6 @@ function SettingsPopover(props) {
 
           <div className={classes.content}>
             <TableSettings
-              eventKind={props.eventKind}
               tableSettings={tableSettings}
               onChangeTableSettings={handleChangeTableSettings}
             />
@@ -127,7 +126,6 @@ function SettingsPopover(props) {
 }
 
 SettingsPopover.propTypes = {
-  eventKind: PropTypes.string.isRequired,
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,

@@ -3,7 +3,7 @@ import { mapbox } from '@corva/ui/utils';
 import * as api from '@corva/ui/clients/jsonApi';
 
 import { getAssetIdFromHashValue, hashFunction } from './hashValue';
-import { TABLE_NPT_LIST } from '../constants';
+import { TABLE_LIST } from '../constants';
 
 const { getAssetV2Coordinates } = mapbox;
 
@@ -357,7 +357,7 @@ export async function fetchInitMetrics(companyId, wellIds, metricsKeys) {
 export async function fetchMetricsData(companyId, hashValues, defMetricsKeys) {
   const metricsKeys =
     defMetricsKeys ||
-    TABLE_NPT_LIST.filter(item => item.isMetricsData).map(item => item.key.split('.')[0]);
+    TABLE_LIST.filter(item => item.isMetricsData).map(item => item.key.split('.')[0]);
 
   if (hashValues.length === 0) {
     return [];

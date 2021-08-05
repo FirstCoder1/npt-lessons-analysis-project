@@ -52,12 +52,11 @@ const useStyles = makeStyles({
   },
   filtersHeaderDisable: {
     display: 'flex',
-    alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: '12px',
     paddingBottom: '2px',
-    cursor: 'pointer',
     color: 'grey',
+    cursor: 'default',
   },
   filtersBody: {
     paddingLeft: '8px',
@@ -116,7 +115,7 @@ function Filters({
   mdRange,
   inclinationFilter,
   inclinationRange,
-  onChangeEventKind,
+  handleChangeEventKind,
   oneRunBhaFilter,
   onChangeStepOutFilter,
   onChangeMdFilter,
@@ -146,13 +145,13 @@ function Filters({
     );
     setEvents(data);
     if (data[0].checked && data[1].checked) {
-      onChangeEventKind('all');
+      handleChangeEventKind('all');
     } else if (data[0].checked) {
-      onChangeEventKind('npt');
+      handleChangeEventKind('npt');
     } else if (data[1].checked) {
-      onChangeEventKind('lessons');
+      handleChangeEventKind('lessons');
     } else {
-      onChangeEventKind('none');
+      handleChangeEventKind('none');
     }
   };
 
@@ -370,7 +369,7 @@ Filters.propTypes = {
   mdRange: PropTypes.arrayOf(PropTypes.number),
   inclinationFilter: PropTypes.arrayOf(PropTypes.number),
   inclinationRange: PropTypes.arrayOf(PropTypes.number),
-  onChangeEventKind: PropTypes.func.isRequired,
+  handleChangeEventKind: PropTypes.func.isRequired,
   oneRunBhaFilter: PropTypes.shape({}).isRequired,
   onChangeStepOutFilter: PropTypes.func.isRequired,
   onChangeMdFilter: PropTypes.func.isRequired,

@@ -4,112 +4,129 @@ const metrics = metricsUtils.default;
 
 export const MAX_OFFSETS_SUPPORTED = 400;
 
-export const TABLE_NPT_LIST = [
+export const TABLE_LIST = [
   {
     label: 'Type',
     key: 'type',
     kind: 'all',
+    active: true,
     width: 40,
   },
   {
     label: 'Well Name',
     key: 'wellName',
     kind: 'all',
+    active: true,
     width: 230,
   },
   {
     label: 'Rig Name',
     key: 'rigName',
     kind: 'all',
+    active: true,
     width: 100,
   },
   {
     label: 'Detail',
     key: 'detail',
     kind: 'npt',
+    active: true,
     width: 100,
   },
   {
     label: 'Accountable Party',
     key: 'party',
     kind: 'npt',
+    active: true,
     width: 100,
   },
   {
     label: 'Responsible Company',
     key: 'company',
     kind: 'npt',
+    active: true,
     width: 80,
   },
   {
     label: 'Topic',
     key: 'topic',
     kind: 'lessons',
+    active: true,
     width: 80,
   },
   {
     label: 'Severity',
     key: 'severity',
     kind: 'lessons',
+    active: true,
     width: 80,
   },
   {
     label: 'Cause',
     key: 'cause',
     kind: 'lessons',
+    active: true,
     width: 80,
   },
   {
     label: 'Description',
     key: 'description',
     kind: 'all',
+    active: true,
     width: 300,
   },
   {
     label: 'Hole Section',
     key: 'holeSection',
     kind: 'all',
+    active: true,
     width: 80,
   },
   {
     label: 'Operation',
     key: 'operation',
     kind: 'all',
+    active: true,
     width: 80,
   },
   {
     label: 'TVD',
     key: 'tvd',
     kind: 'all',
+    active: true,
     width: 80,
   },
   {
     label: 'Phase',
     key: 'phase',
     kind: 'all',
+    active: true,
     width: 80,
   },
   {
     label: 'Start Time',
     key: 'startTime',
     kind: 'all',
+    active: true,
     width: 80,
   },
   {
     label: 'End Time',
     key: 'endTime',
     kind: 'all',
+    active: true,
     width: 80,
   },
   {
     label: 'Link',
     key: 'link',
     kind: 'all',
+    active: true,
     width: 40,
   },  
 ];
 
-export const HIGHLIGHTING_METRICS = TABLE_NPT_LIST.filter(
+export const HIGHLIGHTING_METRICS = TABLE_LIST.filter(
   item => item.isMetricsData && item.key !== 'hole_depth'
 ).map(item => item.key);
 
@@ -300,7 +317,7 @@ export const DEFAULT_SETTINGS = {
     objective: 'section',
     percent: 95,
   },
-  savedTableSettings: TABLE_NPT_LIST.reduce((result, item) => {
+  savedTableSettings: TABLE_LIST.reduce((result, item) => {
     return [
       ...result,
       {
