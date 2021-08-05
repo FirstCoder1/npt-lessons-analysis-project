@@ -2,7 +2,7 @@ import { memo, useCallback, useState } from 'react';
 import { get } from 'lodash';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core';
-import { OffsetWellPickerV2 as OffsetWellPickerDialog } from '@corva/ui/components';
+import { OffsetWellPickerV2 } from '@corva/ui/components';
 
 // import DesignApp from './DesignApp';
 import LearnedApp from './LearnedApp';
@@ -60,7 +60,7 @@ function App(props) {
         <LearnedApp {...props} offsetSetting={offsetSetting} handleApplyBha={handleApplyBha} />
       </div>
 
-      <OffsetWellPickerDialog
+      <OffsetWellPickerV2
         currentUser={props.currentUser}
         companyId={get(props, ['well', 'companyId'])}
         offsetSetting={offsetSetting}
