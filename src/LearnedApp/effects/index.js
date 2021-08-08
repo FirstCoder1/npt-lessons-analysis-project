@@ -1,19 +1,204 @@
 import { useEffect, useState, useRef } from 'react';
-import { get, debounce } from 'lodash';
+import { debounce, uniq, get, minBy, maxBy, isEqual } from 'lodash';
 
 import {
+  fetchNTPData,
+  fetchLessonsData,
+  fetchLessonsCause,
+  fetchLessonsSeverity,
+  fetchLessonsTopic,
   fetchTutorialVideoUrl,
   fetchWells,
-  fetchInclinations,
-  fetchRssData,
-  fetchCasings,
-  fetchHoleSections,
-  fetchBhaData,
-  fetchInitMetrics,
 } from '../utils/apiCalls';
-import { getAssetIdFromHashValue } from '../utils/hashValue';
 
 import { MAX_OFFSETS_SUPPORTED } from '../constants';
+
+export function useFetchNptData(assetId, savedNptTypeFilter) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [nptData, setNptData] = useState([]);
+  const [nptTypeFilter, setNptTypeData] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const result = await fetchNTPData(assetId);
+      const typeData = result?.nptTypes.map(item => {
+        return {
+          key: item.value,
+          title: item.label,
+          color: item.color,
+          checked: true,
+        };
+      });
+
+      setNptData(result.records);
+      if (!savedNptTypeFilter) {
+        setNptTypeData(typeData);
+      } else {
+        setNptTypeData(savedNptTypeFilter);
+      }
+
+      setIsLoading(true);
+    }
+
+    fetchData();
+  }, [assetId, savedNptTypeFilter]);
+
+  return [isLoading, nptData, nptTypeFilter, setNptTypeData];
+}
+
+export function useFetchLessonsData(assetId, savedLessonsFilter, savedOpFilter, savedDepthFilter) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [lessonsRecord, setLessonRecord] = useState(null);
+  const [lessonsFilterData, setLessonsFilterData] = useState(null);
+  const [opFilterData, setOpFilterData] = useState(null);
+  const [depthData, setDepthData] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const [record, causeRes, severityRes, topicRes] = await Promise.all([
+        fetchLessonsData(assetId),
+        fetchLessonsCause(),
+        fetchLessonsSeverity(),
+        fetchLessonsTopic(),
+      ]);
+
+      const topicList = ['All'].concat(topicRes.items.map(item => item.name).sort());
+      const severityList = ['All'].concat(severityRes.items.map(item => item.name).sort());
+      const causeList = ['All'].concat(causeRes.items.map(item => item.name).sort());
+
+      setLessonRecord(record);
+      if (
+        savedLessonsFilter?.length > 0 &&
+        isEqual(savedLessonsFilter[0].array, topicList) &&
+        isEqual(savedLessonsFilter[1].array, severityList) &&
+        isEqual(savedLessonsFilter[2].array, causeList)
+      ) {
+        setLessonsFilterData(savedLessonsFilter);
+      } else {
+        setLessonsFilterData([
+          {
+            key: 'topic',
+            title: 'Event Topic',
+            value: 'All',
+            array: topicList,
+          },
+          {
+            key: 'severity',
+            title: 'Event Severity',
+            value: 'All',
+            array: severityList,
+          },
+          {
+            key: 'cause',
+            title: 'Event Cause',
+            value: 'All',
+            array: causeList,
+          },
+        ]);
+      }
+
+      const holeSectionList = ['All'].concat(uniq(record.map(item => item.data.section)).sort());
+      const activityList = ['All'].concat(uniq(record.map(item => item.data.activity)).sort());
+      const phaseList = ['All'].concat(uniq(record.map(item => item.data.phase)).sort());
+
+      if (
+        savedOpFilter?.length > 0 &&
+        isEqual(savedOpFilter[0].array, holeSectionList) &&
+        isEqual(savedOpFilter[1].array, activityList) &&
+        isEqual(savedOpFilter[2].array, phaseList)
+      ) {
+        setOpFilterData(savedOpFilter);
+      } else {
+        setOpFilterData([
+          {
+            key: 'holesection',
+            title: 'Hole Section',
+            value: 'All',
+            array: holeSectionList,
+          },
+          {
+            key: 'activity',
+            title: 'Activity',
+            value: 'All',
+            array: activityList,
+          },
+          {
+            key: 'phase',
+            title: 'Phase',
+            value: 'All',
+            array: phaseList,
+          },
+          {
+            key: 'depth',
+            title: 'Depth',
+            value: 'Measured Depth',
+            array: ['Measured Depth', 'True Vertical Depth'],
+          },
+        ]);
+      }
+
+      const mdData = record.map(item => [get(item.data, 'md_start'), get(item.data, 'md_end')]);
+      const tvdData = record.map(item => [get(item.data, 'tvd_start'), get(item.data, 'tvd_end')]);
+      const mdStartList = [
+        mdData?.length === 0 ? 0 : Math.floor(minBy(mdData, item => item[0])[0]),
+        mdData?.length === 0 ? 0 : Math.ceil(maxBy(mdData, item => item[0])[0]),
+      ];
+      const mdEndList = [
+        mdData?.length === 0 ? 0 : Math.floor(minBy(mdData, item => item[1])[1]),
+        mdData?.length === 0 ? 0 : Math.ceil(maxBy(mdData, item => item[1])[1]),
+      ];
+      const tvdStartList = [
+        tvdData?.length === 0 ? 0 : Math.floor(minBy(tvdData, item => item[0])[0]),
+        tvdData?.length === 0 ? 0 : Math.ceil(maxBy(tvdData, item => item[0])[0]),
+      ];
+      const tvdEndList = [
+        tvdData?.length === 0 ? 0 : Math.floor(minBy(tvdData, item => item[1])[1]),
+        tvdData?.length === 0 ? 0 : Math.ceil(maxBy(tvdData, item => item[1])[1]),
+      ];
+
+      if (
+        isEqual(get(savedDepthFilter, ['Measured Depth', 'start']), mdStartList) &&
+        isEqual(get(savedDepthFilter, ['Measured Depth', 'end']), mdEndList) &&
+        isEqual(get(savedDepthFilter, ['True Vertical Depth', 'start']), tvdStartList) &&
+        isEqual(get(savedDepthFilter, ['True Vertical Depth', 'end']), tvdEndList)
+      ) {
+        setDepthData(savedDepthFilter);
+      } else {
+        setDepthData({
+          'Measured Depth': {
+            unit: '(ft, MD)',
+            start: mdStartList,
+            end: mdEndList,
+            startRange: mdStartList,
+            endRange: mdEndList,
+          },
+          'True Vertical Depth': {
+            unit: '(ft, TVD)',
+            start: tvdStartList,
+            end: tvdEndList,
+            startRange: tvdStartList,
+            endRange: tvdEndList,
+          },
+        });
+      }
+
+      setIsLoading(true);
+    }
+
+    fetchData();
+  }, [assetId, savedLessonsFilter, savedOpFilter, savedDepthFilter]);
+
+  return [
+    isLoading,
+    lessonsRecord,
+    depthData,
+    setDepthData,
+    opFilterData,
+    setOpFilterData,
+    lessonsFilterData,
+    setLessonsFilterData,
+  ];
+}
 
 export function usePrevious(value) {
   const ref = useRef();
@@ -28,129 +213,14 @@ export function useFetchInitialData(companyId, wellIds) {
 
   useEffect(() => {
     async function fetchInitialData() {
-      const metricsKeys = [
-        'min_inclination',
-        'max_inclination',
-        'min_vertical_section',
-        'max_vertical_section',
-        'hole_depth',
-        'step_out',
-      ];
-
-      const [
-        tutorialVideoUrl,
-        wells,
-        inclinations,
-        rssBhaHashValues,
-        holeSections,
-        casings,
-        [bhaData, bhaHashValues],
-
-        // FIXME: initial metrics are fetched for filtering purpose
-        // min, max inc and vs are not included in drillstring collection
-        // those KPIS are fetched initially to be used for filters
-        // This will result in low performance.
-        // We need to move all those min inc(vs), max in(vs) to drillstring collection
-        metrics,
-      ] = await Promise.all([
+      const [tutorialVideoUrl, wells] = await Promise.all([
         fetchTutorialVideoUrl(),
         fetchWells(wellIds),
-        fetchInclinations(wellIds),
-        fetchRssData(wellIds),
-        fetchHoleSections(wellIds),
-        fetchCasings(wellIds),
-        fetchBhaData(wellIds),
-        fetchInitMetrics(companyId, wellIds, metricsKeys),
       ]);
-
-      const adjustedBhaData = bhaData.map(bha => {
-        const minInc = metrics[`${bha.asset_id}--${bha.bha_id}--min_inclination`];
-        const maxInc = metrics[`${bha.asset_id}--${bha.bha_id}--max_inclination`];
-        const minVS = metrics[`${bha.asset_id}--${bha.bha_id}--min_vertical_section`];
-        const maxVS = metrics[`${bha.asset_id}--${bha.bha_id}--max_vertical_section`];
-        const holeDepth = metrics[`${bha.asset_id}--${bha.bha_id}--hole_depth`];
-        const stepout = metrics[`${bha.asset_id}--${bha.bha_id}--step_out`];
-        return {
-          ...bha,
-          min_inclination: minInc,
-          max_inclination: maxInc,
-          min_vertical_section: minVS,
-          max_vertical_section: maxVS,
-          end_depth: holeDepth,
-          step_out: stepout,
-        };
-      });
-
-      const adjustedWells = wells.map(well => {
-        const assetInclination = inclinations.find(inc => inc.asset_id === well.id);
-        const assetHoleSections = holeSections.filter(section => section.asset_id === well.id);
-        const sortedAssetCasings = casings
-          .filter(casing => casing.asset_id === well.id)
-          .sort((c1, c2) => get(c1, 'data.bottom_depth') - get(c2, 'data.bottom_depth'));
-        const assetCasings = [];
-        sortedAssetCasings.forEach((casing, idx) => {
-          if (idx > 0) {
-            assetCasings.push({
-              ...casing,
-              data: {
-                ...casing.data,
-                top_depth: get(sortedAssetCasings[idx - 1], 'data.bottom_depth'),
-              },
-            });
-          } else {
-            assetCasings.push(casing);
-          }
-        });
-
-        const assetRssBhaHashValues = rssBhaHashValues.filter(
-          value => getAssetIdFromHashValue(value) === well.id
-        );
-        const assetBhaHashValues = bhaHashValues.filter(
-          value => getAssetIdFromHashValue(value) === well.id
-        );
-
-        const assetBhaData = adjustedBhaData.filter(bha => bha.asset_id === well.id);
-
-        return {
-          ...well,
-          holeSections: assetHoleSections,
-          casings: assetCasings,
-          rssBhaHashValues: assetRssBhaHashValues,
-          bhaHashValues: assetBhaHashValues,
-          bhaData: assetBhaData,
-          inclination: assetInclination && assetInclination.inclination,
-        };
-      });
-
-      // NOTE: Get available rigs from well data
-      const { rigs } = adjustedWells.reduce(
-        (result, well) => {
-          if (result.added.includes(well.rigId)) {
-            return result;
-          }
-
-          return {
-            rigs: result.rigs.concat({
-              id: well.rigId,
-              name: well.rigName,
-            }),
-            added: result.added.concat(well.rigId),
-          };
-        },
-        {
-          rigs: [],
-          added: [],
-        }
-      );
 
       setInitialData({
         tutorialVideoUrl,
-        wells: adjustedWells,
-        rigs,
-        holeSections,
-        rssBhaHashValues,
-        bhaHashValues,
-        bhaData,
+        wells,
       });
     }
 
@@ -158,12 +228,6 @@ export function useFetchInitialData(companyId, wellIds) {
       setInitialData({
         tutorialVideoUrl: '',
         wells: [],
-        rigs: [],
-        holeSections: [],
-        rssBhaHashValues: [],
-        bhaHashValues: [],
-        bhaData: [],
-        error: 'Too Many Offset Wells Selected, Narrow Search by Selecting Additional Filters.',
       });
     } else {
       setInitialData(null);
@@ -180,32 +244,32 @@ const debouncedFunc = debounce(callback => {
 }, 1000);
 
 export const useSaveSettings = (
-  coRelationFilters,
-  rssFilter,
-  oneRunBhaFilter,
-  mdFilter,
+  eventKind,
+  nptTypeFilter,
+  lessonsFilter,
+  opFilter,
+  depthFilter,
   stepOutFilter,
-  inclinationFilter,
+  dateFilter,
   sortInfo,
   tableSettings,
   chartExpanded,
-  removedBhas,
   onSettingsChange
 ) => {
   const initialLoadingRef = useRef(true);
 
   const storeAppSettings = () => {
     onSettingsChange({
-      savedCoRelationFilters: coRelationFilters,
-      savedRssFilter: rssFilter,
-      savedOneRunBhaFilter: oneRunBhaFilter,
+      savedEvent: eventKind,
+      savedNptTypeFilter: nptTypeFilter,
+      savedLessonsFilter: lessonsFilter,
+      savedOpFilter: opFilter,
+      savedDepthFilter: depthFilter,
+      savedDateFilter: dateFilter,
       savedStepOutFilter: stepOutFilter,
-      savedInclinationFilter: inclinationFilter,
-      savedMdFilter: mdFilter,
       savedSortInfo: sortInfo,
       savedTableSettings: tableSettings,
       savedChartExpanded: chartExpanded,
-      savedRemovedBhas: removedBhas,
     });
   };
 
@@ -220,15 +284,15 @@ export const useSaveSettings = (
       initialLoadingRef.current = false;
     }
   }, [
-    coRelationFilters,
-    rssFilter,
-    oneRunBhaFilter,
-    mdFilter,
+    eventKind,
+    nptTypeFilter,
+    lessonsFilter,
+    opFilter,
+    depthFilter,
     stepOutFilter,
-    inclinationFilter,
+    dateFilter,
     sortInfo,
     tableSettings,
     chartExpanded,
-    removedBhas,
   ]);
 };

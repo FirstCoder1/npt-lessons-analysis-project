@@ -1,169 +1,104 @@
-import { memo, useState } from 'react';
+import { memo, useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { get } from 'lodash';
-import { Collapse, makeStyles, Typography, List, ListItem, Checkbox } from '@material-ui/core';
+import { debounce, get } from 'lodash';
+import { Collapse, Typography, List, ListItem, Checkbox } from '@material-ui/core';
 import { KeyboardDatePicker } from '@material-ui/pickers';
 import { ExpandLess, ExpandMore, InfoOutlined, CalendarToday } from '@material-ui/icons';
 
+import { useStyles } from './styles';
 import TemplateManager from './TemplateManager';
 import SingleSelect from './SingleSelect';
 import RangeSlider from './RangeSlider';
-import {
-  EVENTS_OPTIONS,
-  NPT_FILTER_TYPE_OPTIONS,
-  NPT_FILTER_OTHER_OPTIONS,
-  LESSONS_FILTER_OPTIONS,
-  OPERATIONAL_FILTER_OPTIONS,
-} from '../../constants';
-
-const useStyles = makeStyles({
-  template: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '20px 0 12px 0',
-  },
-  templateTitle: {
-    width: '100%',
-    textAlign: 'left',
-    fontSize: '12px',
-    lineHeight: '17px',
-    paddingBottom: '10px',
-  },
-  templateContainer: {
-    borderTopLeftRadius: '8px 8px',
-    borderTopRightRadius: '8px 8px',
-    background: '#333333',
-  },
-  templateLabel: {
-    marginTop: '8px',
-    marginLeft: '12px',
-    fontSize: '11px',
-    lineHeight: '17px',
-    paddingBottom: '4px',
-  },
-  filtersHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: '12px',
-    paddingBottom: '2px',
-    cursor: 'pointer',
-  },
-  filtersHeaderDisable: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    paddingTop: '12px',
-    paddingBottom: '2px',
-    color: 'grey',
-    cursor: 'default',
-  },
-  filtersBody: {
-    paddingLeft: '8px',
-    paddingRight: '8px',
-  },
-  expandIcon: {
-    color: 'grey',
-    '&:hover': {
-      color: '#fff',
-    },
-  },
-  list: {
-    width: '100%',
-  },
-  listItem: {
-    padding: 0,
-    cursor: 'pointer',
-  },
-  listItemLabel: {
-    width: '200px',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    fontSize: '16px',
-  },
-  nptTypeLabel: {
-    marginLeft: '10px',
-    marginTop: '12px',
-  },
-  nptTypeIcon: {
-    width: '15px',
-    height: '12px',
-    marginRight: '10px',
-    borderRadius: '2px',
-  },
-  singleSelectContainer: {
-    padding: '0 12px 12px 12px',
-  },
-  dateContainer: {
-    paddingLeft: '12px',
-    paddingRight: '12px',
-  },
-  datePickerEventIcon: {
-    width: '16px',
-    height: '16px',
-  },
-});
+import { TABLE_KIND, EVENTS_OPTIONS, NPT_FILTER_OTHER_OPTIONS } from '../../constants';
 
 function Filters({
   currentUser,
-  initialData,
-  coRelationFilters,
-  stepOutFilter,
-  stepOutRange,
-  mdFilter,
-  mdRange,
-  inclinationFilter,
-  inclinationRange,
-  handleChangeEventKind,
-  oneRunBhaFilter,
-  onChangeStepOutFilter,
-  onChangeMdFilter,
-  onChangeInclinationFilter,
-  onChangeOneRunBhaFilter,
+  eventKind,
+  nptTypeFilter,
+  lessonsFilter,
+  opFilter,
+  depthFilter,
+  dateFilter,
+  tableSettings,
+  onChangeTypeFilter,
+  onChangeLessonsFilter,
+  onChangeOpFilter,
+  onChangeDepthFilter,
+  onChangeDateFilter,
+  onChangeEventKind,
+  onChangeTableSettings,
 }) {
   const classes = useStyles();
   const [isEventsOpen, setIsEventsOpen] = useState(true);
   const [isNPTFiltersOpen, setIsNPTFiltersOpen] = useState(true);
   const [isLessonsFiltersOpen, setIsLessonsFiltersOpen] = useState(true);
   const [isOperationalFiltersOpen, setIsOperationalFiltersOpen] = useState(true);
-  const [events, setEvents] = useState(EVENTS_OPTIONS);
-  const [nptTypeFilters, setNptTypeFilters] = useState(NPT_FILTER_TYPE_OPTIONS);
   const [nptOtherFilters, setNptOtherFilters] = useState(NPT_FILTER_OTHER_OPTIONS);
-  const [lessonsFilters, setLessonsFilters] = useState(LESSONS_FILTER_OPTIONS);
-  const [operationalFilters, setOperationalFilters] = useState(OPERATIONAL_FILTER_OPTIONS);
-  const [startDate, handleStartDateChange] = useState(null);
-  const [endDate, handleEndDateChange] = useState(null);
+  const [isNPTOpen, isLessonsOpen] = useMemo(() => {
+    return [
+      eventKind === TABLE_KIND.npt || eventKind === TABLE_KIND.all,
+      eventKind === TABLE_KIND.lessons || eventKind === TABLE_KIND.all,
+    ];
+  }, [eventKind]);
 
   const handleToggleEvents = () => {
     setIsEventsOpen(prev => !prev);
   };
 
   const handleToggleEventSelect = key => {
-    const data = events.map(item =>
-      item.key === key ? { ...item, checked: !item.checked } : item
-    );
-    setEvents(data);
-    if (data[0].checked && data[1].checked) {
-      handleChangeEventKind('all');
-    } else if (data[0].checked) {
-      handleChangeEventKind('npt');
-    } else if (data[1].checked) {
-      handleChangeEventKind('lessons');
-    } else {
-      handleChangeEventKind('none');
+    let newEventKind = TABLE_KIND.all;
+    if (key === TABLE_KIND.npt) {
+      if (eventKind === TABLE_KIND.none) {
+        newEventKind = TABLE_KIND.npt;
+      } else if (eventKind === TABLE_KIND.npt) {
+        newEventKind = TABLE_KIND.none;
+      } else if (eventKind === TABLE_KIND.all) {
+        newEventKind = TABLE_KIND.lessons;
+      }
     }
+
+    if (key === TABLE_KIND.lessons) {
+      if (eventKind === TABLE_KIND.none) {
+        newEventKind = TABLE_KIND.lessons;
+      } else if (eventKind === TABLE_KIND.lessons) {
+        newEventKind = TABLE_KIND.none;
+      } else if (eventKind === TABLE_KIND.all) {
+        newEventKind = TABLE_KIND.npt;
+      }
+    }
+    onChangeEventKind(newEventKind);
+
+    // Update table settings
+    let newSetting = [];
+    if (newEventKind === TABLE_KIND.all) {
+      newSetting = tableSettings.map(item =>
+        item.kind !== TABLE_KIND.none
+          ? { ...item, show: true, active: true }
+          : { ...item, show: false, active: false }
+      );
+    } else if (newEventKind === TABLE_KIND.npt || newEventKind === TABLE_KIND.lessons) {
+      newSetting = tableSettings.map(item =>
+        item.kind === newEventKind || item.kind === TABLE_KIND.all
+          ? { ...item, show: true, active: true }
+          : { ...item, show: false, active: false }
+      );
+    } else {
+      newSetting = tableSettings.map(item =>
+        item.kind !== TABLE_KIND.all ? { ...item, show: false, active: false } : item
+      );
+    }
+    onChangeTableSettings(newSetting);
   };
 
   const handleToggleNPTFilters = () => {
     setIsNPTFiltersOpen(prev => !prev);
   };
 
-  const handleNptTypeSelect = key => {
-    const data = nptTypeFilters.map(item =>
-      item.key === key ? { ...item, checked: !item.checked } : item
-    );
-    setNptTypeFilters(data);
+  const handleChangeNptType = key => {
+    const data =
+      nptTypeFilter?.map(item => (item.key === key ? { ...item, checked: !item.checked } : item)) ||
+      [];
+    onChangeTypeFilter(data);
   };
 
   const handleNptOtherSelect = (key, value) => {
@@ -176,8 +111,8 @@ function Filters({
   };
 
   const handleLessonsSelect = (key, value) => {
-    const data = lessonsFilters.map(item => (item.key === key ? { ...item, value } : item));
-    setLessonsFilters(data);
+    const data = lessonsFilter?.map(item => (item.key === key ? { ...item, value } : item));
+    onChangeLessonsFilter(data);
   };
 
   const handleToggleOperationalFilters = () => {
@@ -185,8 +120,27 @@ function Filters({
   };
 
   const handleOperationalSelect = (key, value) => {
-    const data = operationalFilters.map(item => (item.key === key ? { ...item, value } : item));
-    setOperationalFilters(data);
+    const data = opFilter?.map(item => (item.key === key ? { ...item, value } : item));
+    onChangeOpFilter(data);
+  };
+
+  const handleChangeStepOutFilter = useCallback(
+    debounce((depthKey, isStart, value) => {
+      const rangeKey = isStart ? 'startRange' : 'endRange';
+      const data = {
+        ...depthFilter,
+        [depthKey]: {
+          ...get(depthFilter, depthKey),
+          [rangeKey]: value,
+        },
+      };
+      onChangeDepthFilter(data);
+    }, 500),
+    [depthFilter]
+  );
+
+  const handleChangeDateFilter = (isStartDate, date) => {
+    onChangeDateFilter(isStartDate ? [date, dateFilter[1]] : [dateFilter[0], date]);
   };
 
   return (
@@ -210,13 +164,16 @@ function Filters({
       </div>
       <Collapse in={isEventsOpen}>
         <List className={classes.list}>
-          {events.map(item => (
+          {EVENTS_OPTIONS.map(item => (
             <ListItem
               key={item.key}
               className={classes.listItem}
               onClick={() => handleToggleEventSelect(item.key)}
             >
-              <Checkbox checked={item.checked} color="primary" />
+              <Checkbox
+                checked={item.key === eventKind || eventKind === TABLE_KIND.all}
+                color="primary"
+              />
               <Typography className={classes.listItemLabel}>{item.title}</Typography>
               <InfoOutlined />
             </ListItem>
@@ -225,24 +182,24 @@ function Filters({
       </Collapse>
 
       <div
-        className={events[0].checked ? classes.filtersHeader : classes.filtersHeaderDisable}
+        className={isNPTOpen ? classes.filtersHeader : classes.filtersHeaderDisable}
         onClick={handleToggleNPTFilters}
       >
         NPT Filters
-        {isNPTFiltersOpen && events[0].checked ? (
+        {isNPTFiltersOpen && isNPTOpen ? (
           <ExpandLess className={classes.expandIcon} />
         ) : (
           <ExpandMore className={classes.expandIcon} />
         )}
       </div>
-      <Collapse in={isNPTFiltersOpen && events[0].checked}>
+      <Collapse in={isNPTFiltersOpen && isNPTOpen}>
         <Typography className={classes.nptTypeLabel}>Type:</Typography>
         <List className={classes.list}>
-          {nptTypeFilters.map(item => (
+          {nptTypeFilter?.map(item => (
             <ListItem
               key={item.key}
               className={classes.listItem}
-              onClick={() => handleNptTypeSelect(item.key)}
+              onClick={() => handleChangeNptType(item.key)}
             >
               <Checkbox checked={item.checked} color="primary" />
               <Typography className={classes.listItemLabel}>{item.title}</Typography>
@@ -259,25 +216,26 @@ function Filters({
               options={item.array}
               currentValue={item.value}
               onChange={e => handleNptOtherSelect(item.key, e.target.value)}
+              disabled
             />
           ))}
         </div>
       </Collapse>
 
       <div
-        className={events[1].checked ? classes.filtersHeader : classes.filtersHeaderDisable}
+        className={isLessonsOpen ? classes.filtersHeader : classes.filtersHeaderDisable}
         onClick={handleToggleLessonsFilters}
       >
         Lessons Learned Filters
-        {isLessonsFiltersOpen && events[1].checked ? (
+        {isLessonsFiltersOpen && isLessonsOpen ? (
           <ExpandLess className={classes.expandIcon} />
         ) : (
           <ExpandMore className={classes.expandIcon} />
         )}
       </div>
-      <Collapse in={isLessonsFiltersOpen && events[1].checked}>
+      <Collapse in={isLessonsFiltersOpen && isLessonsOpen}>
         <div className={classes.singleSelectContainer}>
-          {lessonsFilters.map(item => (
+          {lessonsFilter?.map(item => (
             <SingleSelect
               key={item.key}
               title={item.title}
@@ -299,7 +257,7 @@ function Filters({
       </div>
       <Collapse in={isOperationalFiltersOpen}>
         <div className={classes.singleSelectContainer}>
-          {operationalFilters.map(item => (
+          {opFilter?.map(item => (
             <SingleSelect
               key={item.key}
               title={item.title}
@@ -308,20 +266,27 @@ function Filters({
               onChange={e => handleOperationalSelect(item.key, e.target.value)}
             />
           ))}
-          <RangeSlider
-            title="Start Depth (ft, MD)"
-            min={0}
-            max={89}
-            value={[12, 56]}
-            onChange={onChangeStepOutFilter}
-          />
-          <RangeSlider
-            title="End Depth (ft, MD)"
-            min={0}
-            max={89}
-            value={[12, 56]}
-            onChange={onChangeStepOutFilter}
-          />
+          {depthFilter && opFilter.length === 4 && (
+            <>
+              <RangeSlider
+                title={`Start Depth ${get(depthFilter, [opFilter[3].value, 'unit'])}`}
+                depthKey={opFilter[3].value}
+                isStart
+                min={get(depthFilter, [opFilter[3].value, 'start'])[0]}
+                max={get(depthFilter, [opFilter[3].value, 'start'])[1]}
+                value={get(depthFilter, [opFilter[3].value, 'startRange'])}
+                onChange={handleChangeStepOutFilter}
+              />
+              <RangeSlider
+                title={`End Depth ${get(depthFilter, [opFilter[3].value, 'unit'])}`}
+                depthKey={opFilter[3].value}
+                min={get(depthFilter, [opFilter[3].value, 'end'])[0]}
+                max={get(depthFilter, [opFilter[3].value, 'end'])[1]}
+                value={get(depthFilter, [opFilter[3].value, 'endRange'])}
+                onChange={handleChangeStepOutFilter}
+              />
+            </>
+          )}
         </div>
 
         <div className={classes.dateContainer}>
@@ -332,8 +297,8 @@ function Filters({
             margin="normal"
             id="date-picker-inline"
             label="Start Date"
-            value={startDate}
-            onChange={date => handleStartDateChange(date)}
+            value={dateFilter?.length === 2 ? dateFilter[0] : null}
+            onChange={date => handleChangeDateFilter(true, date)}
             keyboardIcon={<CalendarToday className={classes.datePickerEventIcon} />}
             KeyboardButtonProps={{
               'aria-label': 'change date',
@@ -346,8 +311,8 @@ function Filters({
             margin="normal"
             id="date-picker-inline"
             label="End Date"
-            value={endDate}
-            onChange={date => handleEndDateChange(date)}
+            value={dateFilter?.length === 2 ? dateFilter[1] : null}
+            onChange={date => handleChangeDateFilter(false, date)}
             keyboardIcon={<CalendarToday className={classes.datePickerEventIcon} />}
             KeyboardButtonProps={{
               'aria-label': 'change date',
@@ -360,31 +325,27 @@ function Filters({
 }
 
 Filters.propTypes = {
+  eventKind: PropTypes.number.isRequired,
+  nptTypeFilter: PropTypes.shape([]).isRequired,
+  lessonsFilter: PropTypes.shape([]).isRequired,
+  opFilter: PropTypes.shape([]).isRequired,
+  depthFilter: PropTypes.shape({}).isRequired,
+  dateFilter: PropTypes.shape([]).isRequired,
   currentUser: PropTypes.shape({}).isRequired,
   initialData: PropTypes.shape({}),
+  tableSettings: PropTypes.shape([]).isRequired,
   coRelationFilters: PropTypes.shape({}).isRequired,
-  stepOutFilter: PropTypes.arrayOf(PropTypes.number),
-  stepOutRange: PropTypes.arrayOf(PropTypes.number),
-  mdFilter: PropTypes.arrayOf(PropTypes.number),
-  mdRange: PropTypes.arrayOf(PropTypes.number),
-  inclinationFilter: PropTypes.arrayOf(PropTypes.number),
-  inclinationRange: PropTypes.arrayOf(PropTypes.number),
-  handleChangeEventKind: PropTypes.func.isRequired,
-  oneRunBhaFilter: PropTypes.shape({}).isRequired,
-  onChangeStepOutFilter: PropTypes.func.isRequired,
-  onChangeMdFilter: PropTypes.func.isRequired,
-  onChangeInclinationFilter: PropTypes.func.isRequired,
-  onChangeOneRunBhaFilter: PropTypes.func.isRequired,
+  onChangeTableSettings: PropTypes.func.isRequired,
+  onChangeTypeFilter: PropTypes.func.isRequired,
+  onChangeLessonsFilter: PropTypes.func.isRequired,
+  onChangeOpFilter: PropTypes.func.isRequired,
+  onChangeDepthFilter: PropTypes.func.isRequired,
+  onChangeDateFilter: PropTypes.func.isRequired,
+  onChangeEventKind: PropTypes.func.isRequired,
 };
 
 Filters.defaultProps = {
   initialData: null,
-  stepOutFilter: null,
-  stepOutRange: null,
-  mdFilter: null,
-  mdRange: null,
-  inclinationFilter: null,
-  inclinationRange: null,
 };
 
 export default memo(Filters);

@@ -65,7 +65,7 @@ function RangeSlider(props) {
 
   const handleChange = (e, newValue) => {
     setValue(newValue);
-    props.onChange(newValue);
+    props.onChange(props.depthKey, props.isStart, newValue);
   };
 
   return (
@@ -94,6 +94,8 @@ function RangeSlider(props) {
 
 RangeSlider.propTypes = {
   title: PropTypes.string.isRequired,
+  depthKey: PropTypes.string.isRequired,
+  isStart: PropTypes.bool,
   value: PropTypes.arrayOf(PropTypes.number).isRequired,
   min: PropTypes.number.isRequired,
   max: PropTypes.number.isRequired,
@@ -103,6 +105,7 @@ RangeSlider.propTypes = {
 
 RangeSlider.defaultProps = {
   tooltipTitle: null,
+  isStart: false,
 };
 
 export default memo(RangeSlider);

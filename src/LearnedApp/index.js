@@ -10,14 +10,13 @@ import Filters from './components/Filters';
 import Content from './components/Content';
 import Tutorial from './components/Tutorial';
 
-import { useFetchInitialData, useSaveSettings } from './effects';
-
-import { getFilteredWells, getFilteredBhasStep1, getFilteredBhasStep2 } from './utils/filtering';
-
-import { useMetricsData, useSortedBhaHashValues } from './effects/metricsData';
-import { calculateRanges } from './utils/calculations';
-
-import { DEFAULT_SETTINGS } from './constants';
+import {
+  useFetchNptData,
+  useFetchLessonsData,
+  useFetchInitialData,
+  useSaveSettings,
+} from './effects';
+import { DEFAULT_SETTINGS, TABLE_KIND } from './constants';
 
 const useStyles = makeStyles({
   exploreView: {
@@ -39,189 +38,89 @@ const useStyles = makeStyles({
   },
 });
 
-function ExploreApp({
-  coordinates,
-  offsetSetting,
-  savedIsTutorialShown,
-  savedCoRelationFilters,
-  savedRssFilter,
-  savedOneRunBhaFilter,
-  savedStepOutFilter,
-  savedMdFilter,
-  savedInclinationFilter,
-  savedTableSettings,
-  savedChartExpanded,
-  savedSortInfo,
-  savedPageInfo,
-  savedRemovedBhas,
-  onSettingsChange,
-  handleApplyBha,
-}) {
+function LearnedApp(props) {
+  const {
+    well,
+    coordinates,
+    offsetSetting,
+    savedEvent,
+    savedNptTypeFilter,
+    savedLessonsFilter,
+    savedOpFilter,
+    savedDepthFilter,
+    savedDateFilter,
+    savedIsTutorialShown,
+    savedStepOutFilter,
+    savedTableSettings,
+    savedChartExpanded,
+    savedSortInfo,
+    onSettingsChange,
+  } = props;
+
   const classes = useStyles();
   const isMobile = isMobileDetected || isNativeDetected || coordinates.w <= 3;
   const { companyId } = offsetSetting;
 
   const offsetWellIds = useMemo(() => {
     const selectedWellIds = [
-      ...(offsetSetting.selectedWellIds || []),
+      ...(offsetSetting.addedWellIds || []),
       ...(get(offsetSetting, 'bicWellIds') || []),
-      ...(get(offsetSetting, 'bicManualWellIds') || []),
     ];
     return selectedWellIds;
   }, [offsetSetting]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(!isMobile);
-  const [eventKind, handleChangeEventKind] = useState('npt');
-  const [tableSettings, setTableSettings] = useState(DEFAULT_SETTINGS.savedTableSettings); // song
+  const [eventKind, setEventKind] = useState(savedEvent);
+  const [isNptLoading, nptData, nptTypeFilter, onChangeTypeFilter] = useFetchNptData(
+    get(well, 'asset_id'),
+    savedNptTypeFilter
+  );
+  const [
+    isLessonsLoading,
+    lessonsData,
+    depthFilter,
+    onChangeDepthFilter,
+    opFilter,
+    onChangeOpFilter,
+    lessonsFilter,
+    onChangeLessonsFilter,
+  ] = useFetchLessonsData(
+    get(well, 'asset_id'),
+    savedLessonsFilter,
+    savedOpFilter,
+    savedDepthFilter
+  );
+  const [dateFilter, setDateFilter] = useState(savedDateFilter);
+  const [tableSettings, setTableSettings] = useState(savedTableSettings);
   const [chartExpanded, setChartExpanded] = useState(savedChartExpanded);
   const [showTutorial, setShowTutorial] = useState(!savedIsTutorialShown);
   const [showWellFullName, setShowWellFullName] = useState(false);
   const [loadingSettings, setLoadingSettings] = useState({
-    coRelationFilters: savedCoRelationFilters,
-    rssFilter: savedRssFilter,
-    oneRunBhaFilter: savedOneRunBhaFilter,
-    mdFilter: savedMdFilter,
     stepOutFilter: savedStepOutFilter,
-    inclinationFilter: savedInclinationFilter,
     sortInfo: savedSortInfo,
-    pageInfo: savedPageInfo,
-    removedBhas: savedRemovedBhas,
   });
-
-  const {
-    coRelationFilters,
-    rssFilter,
-    oneRunBhaFilter,
-    mdFilter,
-    stepOutFilter,
-    inclinationFilter,
-    sortInfo,
-    pageInfo,
-    removedBhas,
-  } = loadingSettings;
+  const { stepOutFilter, sortInfo } = loadingSettings;
 
   // NOTE: Fetch all the data for filtering
   const initialData = useFetchInitialData(companyId, offsetWellIds);
-
   const filteredWells = useMemo(() => {
-    return getFilteredWells(initialData, coRelationFilters);
-  }, [initialData, coRelationFilters]);
-
-  const filteredBhasStep1 = useMemo(() => {
-    return getFilteredBhasStep1(filteredWells, rssFilter, oneRunBhaFilter);
-  }, [filteredWells, rssFilter, oneRunBhaFilter]);
-
-  const {
-    md_range: mdRange,
-    inclination_range: inclinationRange,
-    stepout_range: stepOutRange,
-  } = useMemo(() => {
-    return calculateRanges(filteredBhasStep1);
-  }, [filteredBhasStep1]);
-
-  const adjustedMdFilter = useMemo(() => {
-    if (!mdFilter || !mdRange) {
-      return mdRange;
-    } else if (mdFilter[0] >= mdRange[0] && mdFilter[1] <= mdRange[1]) {
-      return mdFilter;
-    }
-
-    return mdRange;
-  }, [mdRange, mdFilter]);
-
-  const adjustedInclinationFilter = useMemo(() => {
-    if (!inclinationFilter || !inclinationRange) {
-      return inclinationRange;
-    } else if (
-      inclinationFilter[0] >= inclinationRange[0] &&
-      inclinationFilter[1] <= inclinationRange[1]
-    ) {
-      return inclinationFilter;
-    }
-
-    return inclinationRange;
-  }, [inclinationRange, inclinationFilter]);
-
-  const adjustedStepOutFilter = useMemo(() => {
-    if (!stepOutFilter || !stepOutRange) {
-      return stepOutRange;
-    } else if (stepOutFilter[0] >= stepOutRange[0] && stepOutFilter[1] <= stepOutRange[1]) {
-      return stepOutFilter;
-    }
-
-    return stepOutRange;
-  }, [stepOutRange, stepOutFilter]);
-
-  const filteredBhasStep2 = useMemo(() => {
-    return getFilteredBhasStep2(
-      filteredBhasStep1,
-      adjustedMdFilter,
-      adjustedInclinationFilter,
-      adjustedStepOutFilter
-    );
-  }, [filteredBhasStep1, adjustedMdFilter, adjustedInclinationFilter, adjustedStepOutFilter]);
-
-  const filteredBhasStep3 = useMemo(() => {
-    if (!filteredBhasStep2) {
-      return null;
-    }
-
-    return filteredBhasStep2.filter(bha => {
-      const bhaKey = `${bha.asset_id}-${bha.bha_id}`;
-      return !removedBhas[bhaKey];
-    });
-  }, [filteredBhasStep2, removedBhas]);
-
-  useEffect(() => {
-    setLoadingSettings(prev => ({
-      ...prev,
-      pageInfo: savedPageInfo,
-    }));
-  }, [filteredBhasStep2]);
-
-  const bhaHashValuesToFetch = useSortedBhaHashValues(
-    companyId,
-    filteredBhasStep3,
-    sortInfo,
-    pageInfo
-  );
-
-  // NOTE: Fetch metrics data
-  const metricsData = useMetricsData(companyId, bhaHashValuesToFetch, initialData);
+    return initialData?.wells;
+  }, [initialData]);
 
   // Save all the settings
   useSaveSettings(
-    coRelationFilters,
-    rssFilter,
-    oneRunBhaFilter,
-    mdFilter,
+    eventKind,
+    nptTypeFilter,
+    lessonsFilter,
+    opFilter,
+    depthFilter,
     stepOutFilter,
-    inclinationFilter,
+    dateFilter,
     sortInfo,
     tableSettings,
     chartExpanded,
-    removedBhas,
     onSettingsChange
   );
-
-  // Update table settings
-  useEffect(() => {
-    let newSetting = [];
-    if (eventKind === 'all') {
-      newSetting = tableSettings.map(item => ({ ...item, active: true }));
-    } else if (eventKind === 'npt' || eventKind === 'lessons') {
-      newSetting = tableSettings.map(item =>
-        item.kind === eventKind || item.kind === 'all'
-          ? { ...item, active: true }
-          : { ...item, show: false, active: false }
-      );
-    } else {
-      newSetting = tableSettings.map(item =>
-        item.kind !== 'all' ? { ...item, show: false, active: false } : item
-      );
-    }
-    setTableSettings(newSetting);
-  }, [eventKind]);
 
   const handleToggleDrawer = useCallback(() => {
     setIsDrawerOpen(prev => !prev);
@@ -231,88 +130,9 @@ function ExploreApp({
     setLoadingSettings(prev => {
       return {
         ...prev,
-        removedBhas: DEFAULT_SETTINGS.savedRemovedBhas,
-        coRelationFilters: DEFAULT_SETTINGS.savedCoRelationFilters,
-        rssFilter: DEFAULT_SETTINGS.savedRssFilter,
-        oneRunBhaFilter: DEFAULT_SETTINGS.savedOneRunBhaFilter,
-        mdFilter: DEFAULT_SETTINGS.savedMdFilter,
         stepOutFilter: DEFAULT_SETTINGS.savedStepoutFilter,
-        inclinationFilter: DEFAULT_SETTINGS.savedInclinationFilter,
       };
     });
-  }, []);
-
-  const handleChangeCoRelationFilters = useCallback((key, newFilters) => {
-    setLoadingSettings(prev => {
-      return {
-        ...prev,
-        coRelationFilters: {
-          ...prev.coRelationFilters,
-          [key]: newFilters,
-        },
-      };
-    });
-  }, []);
-
-  const handleChangeRssFilter = useCallback(newFilter => {
-    setLoadingSettings(prev => {
-      return {
-        ...prev,
-        rssFilter: newFilter,
-      };
-    });
-  }, []);
-
-  const handleChangeOneRunBhaFilter = useCallback(
-    debounce(newFilter => {
-      setLoadingSettings(prev => {
-        return {
-          ...prev,
-          oneRunBhaFilter: newFilter,
-        };
-      });
-    }, 1000),
-    []
-  );
-
-  const handleChangeStepOutFilter = useCallback(
-    debounce(newFilter => {
-      setLoadingSettings(prev => {
-        return {
-          ...prev,
-          stepOutFilter: newFilter,
-        };
-      });
-    }, 1000),
-    []
-  );
-
-  const handleChangeMdFilter = useCallback(
-    debounce(newFilter => {
-      setLoadingSettings(prev => {
-        return {
-          ...prev,
-          mdFilter: newFilter,
-        };
-      });
-    }, 1000),
-    []
-  );
-
-  const handleChangeInclinationFilter = useCallback(
-    debounce(newFilter => {
-      setLoadingSettings(prev => {
-        return {
-          ...prev,
-          inclinationFilter: newFilter,
-        };
-      });
-    }, 1000),
-    []
-  );
-
-  const handleChangeTableSettings = useCallback(newSettings => {
-    setTableSettings(newSettings);
   }, []);
 
   const handleChangeChartExpanded = useCallback(() => {
@@ -328,45 +148,15 @@ function ExploreApp({
     setShowTutorial(true);
   }, []);
 
-  const handleChangeSortInfo = useCallback(newSortInfo => {
-    setLoadingSettings(prev => {
-      return {
-        ...prev,
-        sortInfo: newSortInfo,
-      };
-    });
-  }, []);
-
   const handleChangeShowWellFullName = useCallback(() => {
     setShowWellFullName(prev => !prev);
   }, []);
 
-  const handleRemoveBHA = useCallback((wellId, bhaId) => {
-    const bhaKey = `${wellId}-${bhaId}`;
-
-    setLoadingSettings(prev => {
-      return {
-        ...prev,
-        removedBhas: {
-          ...prev.removedBhas,
-          [bhaKey]: true,
-        },
-      };
-    });
-
-    // showSuccessNotificationMsg('BHA has been deleted successfully.');
-  }, []);
   const hasNoOffsetWell = offsetWellIds.length < 1;
   const hasDataError = !!(initialData && initialData.error);
   const isDrawerDisabled = hasNoOffsetWell || hasDataError;
 
-  const isLoading =
-    !initialData ||
-    !filteredWells ||
-    !filteredBhasStep1 ||
-    !filteredBhasStep2 ||
-    !filteredBhasStep3 ||
-    !metricsData;
+  const isLoading = !initialData || !filteredWells || !isNptLoading || !isLessonsLoading;
 
   return (
     <div className={classes.exploreView}>
@@ -379,22 +169,20 @@ function ExploreApp({
       >
         <Filters
           initialData={initialData}
-          coRelationFilters={coRelationFilters}
-          rssFilter={rssFilter}
-          stepOutFilter={adjustedStepOutFilter}
-          stepOutRange={stepOutRange}
-          mdFilter={adjustedMdFilter}
-          mdRange={mdRange}
-          inclinationFilter={adjustedInclinationFilter}
-          inclinationRange={inclinationRange}
-          handleChangeEventKind={handleChangeEventKind}
-          oneRunBhaFilter={oneRunBhaFilter}
-          onChangeCoRelationFilters={handleChangeCoRelationFilters}
-          onChangeRssFilter={handleChangeRssFilter}
-          onChangeStepOutFilter={handleChangeStepOutFilter}
-          onChangeMdFilter={handleChangeMdFilter}
-          onChangeInclinationFilter={handleChangeInclinationFilter}
-          onChangeOneRunBhaFilter={handleChangeOneRunBhaFilter}
+          eventKind={eventKind}
+          nptTypeFilter={nptTypeFilter}
+          lessonsFilter={lessonsFilter}
+          opFilter={opFilter}
+          depthFilter={depthFilter}
+          dateFilter={dateFilter}
+          tableSettings={tableSettings}
+          onChangeEventKind={setEventKind}
+          onChangeTableSettings={setTableSettings}
+          onChangeTypeFilter={onChangeTypeFilter}
+          onChangeLessonsFilter={onChangeLessonsFilter}
+          onChangeOpFilter={onChangeOpFilter}
+          onChangeDepthFilter={onChangeDepthFilter}
+          onChangeDateFilter={setDateFilter}
         />
       </Drawer>
       {!hasNoOffsetWell ? (
@@ -403,20 +191,23 @@ function ExploreApp({
             <Content
               isMobile={isMobile}
               isDrawerOpen={isDrawerOpen}
-              data={metricsData}
-              initialData={initialData}
+              eventKind={eventKind}
+              nptData={nptData}
+              lessonsData={lessonsData}
+              nptTypeFilter={nptTypeFilter}
+              lessonsFilter={lessonsFilter}
+              opFilter={opFilter}
+              depthFilter={depthFilter}
+              dateFilter={dateFilter}
+              offsetWells={initialData?.wells}
               tableSettings={tableSettings}
               chartExpanded={chartExpanded}
               sortInfo={sortInfo}
               showWellFullName={showWellFullName}
-              removedBhas={removedBhas}
-              onRemoveBHA={handleRemoveBHA}
               onChangeShowWellFullName={handleChangeShowWellFullName}
-              onChangeTableSettings={handleChangeTableSettings}
+              onChangeTableSettings={setTableSettings}
               onChangeChartExpanded={handleChangeChartExpanded}
-              onChangeSortInfo={handleChangeSortInfo}
               onShowTutorial={handleShowTutorial}
-              handleApplyBha={handleApplyBha}
             />
           ) : (
             <div className={classes.loadingWrapper}>
@@ -443,45 +234,42 @@ function ExploreApp({
   );
 }
 
-ExploreApp.propTypes = {
+LearnedApp.propTypes = {
   coordinates: PropTypes.shape({
     w: PropTypes.number.isRequired,
   }).isRequired,
   offsetSetting: PropTypes.shape({
     companyId: PropTypes.number.isRequired,
-    selectedWellIds: PropTypes.shape([]).isRequired,
+    addedWellIds: PropTypes.shape([]).isRequired,
     bicWellIds: PropTypes.shape([]).isRequired,
     bicManualWellIds: PropTypes.shape([]).isRequired,
   }).isRequired,
   savedIsTutorialShown: PropTypes.bool,
-  savedCoRelationFilters: PropTypes.shape({}),
-  savedRssFilter: PropTypes.string,
+  savedEvent: PropTypes.number,
+  savedNptTypeFilter: PropTypes.shape([]),
+  savedLessonsFilter: PropTypes.shape([]),
+  savedOpFilter: PropTypes.shape([]),
+  savedDepthFilter: PropTypes.shape({}),
+  savedDateFilter: PropTypes.shape([]),
   savedStepOutFilter: PropTypes.arrayOf(PropTypes.number),
-  savedMdFilter: PropTypes.arrayOf(PropTypes.number),
-  savedInclinationFilter: PropTypes.arrayOf(PropTypes.number),
-  savedOneRunBhaFilter: PropTypes.shape({}),
   savedTableSettings: PropTypes.arrayOf(PropTypes.shape({})),
-  savedRemovedBhas: PropTypes.shape({}),
   savedChartExpanded: PropTypes.bool,
   savedSortInfo: PropTypes.shape({}),
-  savedPageInfo: PropTypes.shape({}),
   onSettingsChange: PropTypes.func.isRequired,
-  handleApplyBha: PropTypes.func.isRequired,
 };
 
-ExploreApp.defaultProps = {
+LearnedApp.defaultProps = {
   savedIsTutorialShown: DEFAULT_SETTINGS.savedIsTutorialShown,
-  savedCoRelationFilters: DEFAULT_SETTINGS.savedCoRelationFilters,
-  savedRssFilter: DEFAULT_SETTINGS.savedRssFilter,
+  savedEvent: TABLE_KIND.npt,
+  savedNptTypeFilter: [],
+  savedLessonsFilter: [],
+  savedOpFilter: [],
+  savedDepthFilter: {},
+  savedDateFilter: [null, null],
   savedStepOutFilter: DEFAULT_SETTINGS.savedStepOutFilter,
-  savedMdFilter: DEFAULT_SETTINGS.savedMdFilter,
-  savedInclinationFilter: DEFAULT_SETTINGS.savedInclinationFilter,
-  savedOneRunBhaFilter: DEFAULT_SETTINGS.savedOneRunBhaFilter,
   savedTableSettings: DEFAULT_SETTINGS.savedTableSettings,
   savedChartExpanded: DEFAULT_SETTINGS.savedChartExpanded,
   savedSortInfo: DEFAULT_SETTINGS.savedSortInfo,
-  savedPageInfo: DEFAULT_SETTINGS.savedPageInfo,
-  savedRemovedBhas: DEFAULT_SETTINGS.savedRemovedBhas,
 };
 
-export default memo(ExploreApp);
+export default memo(LearnedApp);

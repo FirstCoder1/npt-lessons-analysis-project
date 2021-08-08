@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { get, debounce } from 'lodash';
 import {
@@ -14,7 +14,6 @@ import {
 
 import { MoreVert as MoreVertIcon } from '@material-ui/icons';
 
-import { getSymbolOfMotorSize } from '../../../utils/unitConversion';
 import { HIGHLIGHTING_METRICS, LOW_VALUE_GOOD_METRICS } from '../../../constants';
 
 const useStyles = makeStyles({
@@ -33,6 +32,11 @@ const useStyles = makeStyles({
   },
   bodyCellValue: {
     fontSize: 13,
+  },
+  nptTypeIcon: {
+    width: '12px',
+    height: '12px',
+    borderRadius: '2px',
   },
   actionButton: {
     padding: '8px',
@@ -64,94 +68,14 @@ function formatNumber(value, precision) {
   return Number.isFinite(parseFloat(value)) ? parseFloat(value).toFixed(precision) : '-';
 }
 
-function formatMotorConfig(motorData, isForCSV = false) {
-  if (!motorData) {
-    return '-';
-  }
-
-  const motorDiameter = formatNumber(get(motorData, 'outer_diameter'), 1);
-  const motorStages = formatNumber(get(motorData, 'stages'), 1);
-  const motorRotorlobe = formatNumber(get(motorData, 'number_rotor_lobes'), 1);
-  const motorStatorlobe = formatNumber(get(motorData, 'number_stator_lobes'), 1);
-  const motorRPG = formatNumber(get(motorData, 'rpg'), 2);
-  const motorBend = formatNumber(get(motorData, 'bend_range'), 2);
-  const motorMfr = get(motorData, 'make', '-');
-
-  if (isForCSV) {
-    return [
-      `${motorDiameter}${getSymbolOfMotorSize()}`,
-      motorMfr,
-      `${motorRotorlobe}/${motorStatorlobe}`,
-      motorStages,
-      `${motorRPG}RPG`,
-      motorBend,
-    ].join(' ');
-  }
-
-  return (
-    <span>
-      {motorDiameter}
-      <small>{getSymbolOfMotorSize()}</small>&nbsp;
-      {motorMfr}&nbsp;
-      <br />
-      {motorRotorlobe}/{motorStatorlobe}&nbsp;
-      {motorStages}&nbsp;
-      {motorRPG}&nbsp;RPG&nbsp;
-      {motorBend}
-      <small>&ordm;</small>&nbsp;
-    </span>
-  );
-}
-
 function formatCell(rowData, dataKey) {
   let result;
   switch (dataKey) {
-    case 'start_depth':
-    case 'hole_depth':
-    case 'hole_depth_change':
-    case 'drilled_feet_rotary':
-    case 'drilled_feet_slide':
-    case 'rop_rotary_percentiles.median':
-    case 'rop_slide_percentiles.median':
-    case 'on_bottom_percentage':
-    case 'drilled_feet_slide_percentage':
-    case 'cost_per_ft':
-    case 'mse_percentiles.median':
-    case 'bit_rpm_percentiles.median':
-    case 'rpm_percentiles.median':
-    case 'flow_in_percentiles.median':
-    case 'diff_pressure_percentiles.median':
-    case 'wob_percentiles.median':
-      result = formatNumber(get(rowData, dataKey), 0);
-      break;
-    case 'hole_size':
-    case 'motorData.outer_diameter':
+    case 'holeSize':
       result = formatNumber(get(rowData, dataKey), 3);
       break;
-    case 'gross_time':
-    case 'bitTFA':
-    case 'motorData.bend_range':
-    case 'motorData.bit_to_bend':
-    case 'motorData.rpg':
-    case 'build_rate':
-    case 'turn_rate':
-    case 'on_bottom_time':
-    case 'hwdpLength':
-    case 'min_inclination':
-    case 'max_inclination':
-    case 'min_vertical_section':
-    case 'max_vertical_section':
-    case 'rop_rotary':
-    case 'rop_slide':
-    case 'step_out':
-    case 'rop':
-      result = formatNumber(get(rowData, dataKey), 2);
-      break;
-    case 'max_dls':
-      result = formatNumber(get(rowData, dataKey), 2);
-      break;
-    case 'motorConfig':
-      result = formatMotorConfig(rowData.motorData);
+    case 'link':
+      result = '-';
       break;
     default:
       result = get(rowData, dataKey) || '-';
@@ -180,26 +104,25 @@ function LearnTableRow({
   rowData,
   rowSettings,
   minMaxDict,
-  isActive,
   onMouseEvent,
   onRemove,
   getCellStyles,
 }) {
   const classes = useStyles();
-  const rowStyle = isActive ? { background: '#2c2c2c' } : null;
+  const rowStyle = { background: '#2c2c2c' };
   const [actionAnchorEl, setActionAnchorEl] = useState(null);
 
   const handleMouseEnter = () => {
-    const data = {
-      wellId: rowData.wellId,
-      bhaId: rowData.bhaId,
-      eventFrom: 'table',
-    };
-    debouncedMouseEvent(data, onMouseEvent);
+    // const data = {
+    //   wellId: rowData.wellId,
+    //   bhaId: rowData.bhaId,
+    //   eventFrom: 'table',
+    // };
+    // debouncedMouseEvent(data, onMouseEvent);
   };
 
   const handleMouseLeave = () => {
-    debouncedMouseEvent({}, onMouseEvent);
+    // debouncedMouseEvent({}, onMouseEvent);
   };
 
   const handleOpenActionMenu = e => {
@@ -223,35 +146,59 @@ function LearnTableRow({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {rowSettings.map(columnSettings => (
-        <TableCell
-          key={columnSettings.key}
-          className={classes.bodyCell}
-          style={getCellStyles(columnSettings.key)}
-        >
-          {columnSettings.key === 'wellName' ? (
-            <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
-              <Typography
-                className={classes.tickCellValue}
-                component="a"
-                style={{ whiteSpace: 'nowrap', color: '#fff' }}
-                href={`/assets/${rowData.wellId}`}
+      {rowSettings.map(columnSettings => {
+        if (columnSettings.key === 'type') {
+          return (
+            <>
+              <TableCell
+                key={columnSettings.key}
+                className={classes.bodyCell}
+                style={getCellStyles(columnSettings.key)}
               >
-                {formatWellName(rowData.wellName, showWellFullName)}
-              </Typography>
-            </Tooltip>
-          ) : (
-            <Typography
-              className={
-                columnSettings.key === 'type' ? classes.tickCellValue : classes.bodyCellValue
-              }
-              style={getFontStyle(minMaxDict, rowData, columnSettings.key)}
-            >
-              {formatCell(rowData, columnSettings.key)}
-            </Typography>
-          )}
-        </TableCell>
-      ))}
+                <div className={classes.nptTypeIcon} style={{ background: rowData.type }} />
+              </TableCell>
+            </>
+          );
+        } else if (columnSettings.key === 'wellName') {
+          return (
+            <>
+              <TableCell
+                key={columnSettings.key}
+                className={classes.bodyCell}
+                style={getCellStyles(columnSettings.key)}
+              >
+                <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
+                  <Typography
+                    className={classes.tickCellValue}
+                    component="a"
+                    style={{ whiteSpace: 'nowrap', color: '#fff' }}
+                    href={`/assets/${rowData.wellId}`}
+                  >
+                    {formatWellName(rowData.wellName, showWellFullName)}
+                  </Typography>
+                </Tooltip>
+              </TableCell>
+            </>
+          );
+        } else {
+          return (
+            <>
+              <TableCell
+                key={columnSettings.key}
+                className={classes.bodyCell}
+                style={getCellStyles(columnSettings.key)}
+              >
+                <Typography
+                  className={classes.bodyCellValue}
+                  style={getFontStyle(minMaxDict, rowData, columnSettings.key)}
+                >
+                  {formatCell(rowData, columnSettings.key)}
+                </Typography>
+              </TableCell>
+            </>
+          );
+        }
+      })}
 
       <TableCell className={classes.bodyCell}>
         <Tooltip title="More">
@@ -265,7 +212,6 @@ function LearnTableRow({
           </IconButton>
         </Tooltip>
       </TableCell>
-
       <Menu
         anchorEl={actionAnchorEl}
         keepMounted
@@ -291,10 +237,10 @@ LearnTableRow.propTypes = {
     wellName: PropTypes.string.isRequired,
     bhaId: PropTypes.number.isRequired,
     schematic: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
+    type: PropTypes.string.isRequired,
   }).isRequired,
   rowSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   minMaxDict: PropTypes.shape({}).isRequired,
-  isActive: PropTypes.bool.isRequired,
   onMouseEvent: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
   getCellStyles: PropTypes.func.isRequired,

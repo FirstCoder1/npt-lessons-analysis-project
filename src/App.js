@@ -4,9 +4,8 @@ import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core';
 import { OffsetWellPickerV2 } from '@corva/ui/components';
 
-// import DesignApp from './DesignApp';
-import LearnedApp from './LearnedApp';
 import AppHeader from './AppHeader';
+import LearnedApp from './LearnedApp';
 
 const useStyles = makeStyles({
   nptLessonApp: {
@@ -29,7 +28,6 @@ function App(props) {
   console.log('props=', props);
   const [offsetSetting, setOffsetSetting] = useState(props.savedOffsetSetting);
   const [isOpenOffsetsDialog, setIsOpenOffsetsDialog] = useState(false);
-  const [offsetWellBha, setOffsetWellBha] = useState(null);
 
   const handleOpenOffsetsDialog = useCallback(() => {
     setIsOpenOffsetsDialog(true);
@@ -48,16 +46,12 @@ function App(props) {
     [props.onSettingChange]
   );
 
-  const handleApplyBha = useCallback(bha => {
-    setOffsetWellBha(bha);
-  }, []);
-
   return (
     <div className={classes.nptLessonApp}>
       <AppHeader onOpenOffsetsDialog={handleOpenOffsetsDialog} offsetSetting={offsetSetting} />
 
       <div className={classes.frame}>
-        <LearnedApp {...props} offsetSetting={offsetSetting} handleApplyBha={handleApplyBha} />
+        <LearnedApp {...props} offsetSetting={offsetSetting} />
       </div>
 
       <OffsetWellPickerV2

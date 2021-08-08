@@ -97,7 +97,7 @@ SortableList.propTypes = {
 
 function TableSettings({ tableSettings, onChangeTableSettings }) {
   const classes = useStyles();
-
+console.log('tableSettings=', tableSettings);
   const isAllSelected = useMemo(() => {
     let allChecked = true;
     for (let i = 0; i < tableSettings.length; i += 1) {

@@ -1028,10 +1028,10 @@
     eslint-plugin-react-hooks "^4.2.0"
     prettier "^2.0.0"
 
-"@corva/ui@^0.14.0-12":
-  version "0.14.0-12"
-  resolved "https://registry.yarnpkg.com/@corva/ui/-/ui-0.14.0-12.tgz#8060cc2363ff86ba55c546ed76cf8f63950c064c"
-  integrity sha512-DV1nZkvUmDjXSdeWf0QBUpMfRQkyWLt75CYvkt46aN+Eqprqd92cX5Y4oSVG/7fW9JmJx5vuIvrlQLojpSDNiA==
+"@corva/ui@^0.15.0-1":
+  version "0.15.0-1"
+  resolved "https://registry.yarnpkg.com/@corva/ui/-/ui-0.15.0-1.tgz#e3f5ef6cd941fb5335919855abea0d1867658ee1"
+  integrity sha512-fuiUkLUmqCjDHsSvaNLi7/To9/nfBIjaSSszP2MgNG/Qo5bGM+fD/38ZTGee2/l0TqLf9YUwO0dBomSFDnILCA==
   dependencies:
     "@babel/core" "^7.12.10"
     "@babel/plugin-transform-react-jsx" "^7.12.11"

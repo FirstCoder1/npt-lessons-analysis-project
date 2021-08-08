@@ -1,4 +1,4 @@
-import { memo, useMemo, useEffect } from 'react';
+import { memo, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { get } from 'lodash';
 import {
@@ -18,7 +18,6 @@ import {
   KeyboardArrowLeft as ArrowLeftIcon,
 } from '@material-ui/icons';
 
-import { getUnit } from '../../../utils/unitConversion';
 import { HIGHLIGHTING_METRICS } from '../../../constants';
 import LearnTableRow from './LearnTableRow';
 
@@ -67,27 +66,14 @@ function LearnTable({
   showWellFullName,
   onChangeShowWellFullName,
   tableSettings,
-  activeBha,
   sortInfo,
   onMouseEvent,
-  onRemoveBHA,
   onChangeSortInfo,
-  handleApplyBha,
 }) {
   const tableColumns = tableSettings.filter(column => column.show);
   const classes = useStyles({
     isLightTheme: theme.isLightTheme,
   });
-
-  useEffect(() => {
-    const { wellId, bhaId, eventFrom } = activeBha;
-    if (!Number.isFinite(wellId) || !Number.isFinite(bhaId) || eventFrom === 'table') {
-      return;
-    }
-
-    const uidToScroll = `${wellId}-${bhaId}`;
-    document.getElementById(uidToScroll).focus();
-  }, [activeBha]);
 
   const minMaxDict = useMemo(() => {
     const result = {};
@@ -126,7 +112,7 @@ function LearnTable({
       });
     }
   };
-
+console.log('data=', data);
   return (
     <>
       <Table aria-label="npt table">
@@ -148,7 +134,7 @@ function LearnTable({
                 >
                   <span className={classes.headerCellInnerContent}>
                     {columnSettings.label}
-                    {columnSettings.unitType ? getUnit(columnSettings.key) : ''}
+                    {/* {columnSettings.unitType ? getUnit(columnSettings.key) : ''} song */}
                     {columnSettings.key === sortInfo.key && (
                       <>
                         {sortInfo.direction === 'asc' ? (
@@ -185,14 +171,11 @@ function LearnTable({
           {data.map(rowData => (
             <LearnTableRow
               key={`${rowData.wellId}-${rowData.bhaId}`}
-              isActive={rowData.wellId === activeBha.wellId && rowData.bhaId === activeBha.bhaId}
               showWellFullName={showWellFullName}
               rowData={rowData}
               rowSettings={tableColumns}
               minMaxDict={minMaxDict}
               onMouseEvent={onMouseEvent}
-              onRemove={onRemoveBHA}
-              handleApplyBha={handleApplyBha}
               getCellStyles={getCellStyles}
             />
           ))}
@@ -210,19 +193,12 @@ LearnTable.propTypes = {
   }).isRequired,
   data: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
-  activeBha: PropTypes.shape({
-    wellId: PropTypes.number,
-    bhaId: PropTypes.number,
-    eventFrom: PropTypes.string,
-  }).isRequired,
   sortInfo: PropTypes.shape({
     key: PropTypes.string.isRequired,
     direction: PropTypes.string.isRequired,
   }).isRequired,
   onChangeSortInfo: PropTypes.func.isRequired,
   onMouseEvent: PropTypes.func.isRequired,
-  onRemoveBHA: PropTypes.func.isRequired,
-  handleApplyBha: PropTypes.func.isRequired,
 };
 
 export default withTheme(memo(LearnTable));

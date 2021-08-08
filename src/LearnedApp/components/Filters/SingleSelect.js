@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { MenuItem, Select, FormControl, InputLabel, Input, makeStyles } from '@material-ui/core';
+import { MenuItem, Select, FormControl, InputLabel, makeStyles } from '@material-ui/core';
 
 const useStyles = makeStyles({
   formControl: {
@@ -8,14 +8,12 @@ const useStyles = makeStyles({
   },
 });
 
-function SingleSelect({ title, options, currentValue, onChange }) {
+function SingleSelect({ title, options, currentValue, onChange, disabled }) {
   const classes = useStyles();
 
   return (
-    <FormControl className={classes.formControl}>
-      <InputLabel id={`c-bho-multi-select-label-${title}`}>
-        {title}
-      </InputLabel>
+    <FormControl className={classes.formControl} disabled={disabled}>
+      <InputLabel id={`c-bho-multi-select-label-${title}`}>{title}</InputLabel>
       <Select
         labelId={`c-bho-multi-select-label-${title}`}
         id={`c-bho-multi-select-${title}`}
@@ -23,9 +21,7 @@ function SingleSelect({ title, options, currentValue, onChange }) {
         onChange={onChange}
       >
         {options.map(item => (
-          <MenuItem value={item}>
-            {item}
-          </MenuItem>
+          <MenuItem value={item}>{item}</MenuItem>
         ))}
       </Select>
     </FormControl>
@@ -37,10 +33,12 @@ SingleSelect.propTypes = {
   options: PropTypes.shape([]).isRequired,
   currentValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   onChange: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
 };
 
 SingleSelect.defaultProps = {
   title: '',
+  disabled: false,
 };
 
 export default SingleSelect;
