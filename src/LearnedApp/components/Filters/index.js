@@ -35,58 +35,27 @@ function Filters({
   const [isOperationalFiltersOpen, setIsOperationalFiltersOpen] = useState(true);
   const [nptOtherFilters, setNptOtherFilters] = useState(NPT_FILTER_OTHER_OPTIONS);
   const [isNPTOpen, isLessonsOpen] = useMemo(() => {
-    return [
-      eventKind === TABLE_KIND.npt || eventKind === TABLE_KIND.all,
-      eventKind === TABLE_KIND.lessons || eventKind === TABLE_KIND.all,
-    ];
+    // eslint-disable-next-line no-bitwise
+    return [eventKind & TABLE_KIND.npt, eventKind & TABLE_KIND.lessons];
   }, [eventKind]);
 
   const handleToggleEvents = () => {
     setIsEventsOpen(prev => !prev);
   };
 
-  const handleToggleEventSelect = key => {
-    let newEventKind = TABLE_KIND.all;
-    if (key === TABLE_KIND.npt) {
-      if (eventKind === TABLE_KIND.none) {
-        newEventKind = TABLE_KIND.npt;
-      } else if (eventKind === TABLE_KIND.npt) {
-        newEventKind = TABLE_KIND.none;
-      } else if (eventKind === TABLE_KIND.all) {
-        newEventKind = TABLE_KIND.lessons;
-      }
-    }
-
-    if (key === TABLE_KIND.lessons) {
-      if (eventKind === TABLE_KIND.none) {
-        newEventKind = TABLE_KIND.lessons;
-      } else if (eventKind === TABLE_KIND.lessons) {
-        newEventKind = TABLE_KIND.none;
-      } else if (eventKind === TABLE_KIND.all) {
-        newEventKind = TABLE_KIND.npt;
-      }
-    }
+  const handleToggleEventSelect = value => {
+    // eslint-disable-next-line no-bitwise
+    const newEventKind = eventKind ^ value;
     onChangeEventKind(newEventKind);
 
-    // Update table settings
-    let newSetting = [];
-    if (newEventKind === TABLE_KIND.all) {
-      newSetting = tableSettings.map(item =>
-        item.kind !== TABLE_KIND.none
-          ? { ...item, show: true, active: true }
-          : { ...item, show: false, active: false }
-      );
-    } else if (newEventKind === TABLE_KIND.npt || newEventKind === TABLE_KIND.lessons) {
-      newSetting = tableSettings.map(item =>
-        item.kind === newEventKind || item.kind === TABLE_KIND.all
-          ? { ...item, show: true, active: true }
-          : { ...item, show: false, active: false }
-      );
-    } else {
-      newSetting = tableSettings.map(item =>
-        item.kind !== TABLE_KIND.all ? { ...item, show: false, active: false } : item
-      );
-    }
+    const newSetting = tableSettings.map(item => {
+      // eslint-disable-next-line no-bitwise
+      if (item.kind & newEventKind) {
+        return { ...item, show: true, active: true };
+      } else {
+        return item.kind === TABLE_KIND.all ? item : { ...item, show: false, active: false };
+      }
+    });
     onChangeTableSettings(newSetting);
   };
 
@@ -171,7 +140,8 @@ function Filters({
               onClick={() => handleToggleEventSelect(item.key)}
             >
               <Checkbox
-                checked={item.key === eventKind || eventKind === TABLE_KIND.all}
+                // eslint-disable-next-line no-bitwise
+                checked={eventKind & item.key}
                 color="primary"
               />
               <Typography className={classes.listItemLabel}>{item.title}</Typography>

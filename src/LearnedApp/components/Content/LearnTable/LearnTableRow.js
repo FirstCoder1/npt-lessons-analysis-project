@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import moment from 'moment-timezone';
 import { get, debounce } from 'lodash';
 import {
   TableCell,
@@ -14,6 +15,7 @@ import {
 
 import { MoreVert as MoreVertIcon } from '@material-ui/icons';
 
+import LessonsTypeIcon from './LessonsTypeIcon';
 import { HIGHLIGHTING_METRICS, LOW_VALUE_GOOD_METRICS } from '../../../constants';
 
 const useStyles = makeStyles({
@@ -32,11 +34,6 @@ const useStyles = makeStyles({
   },
   bodyCellValue: {
     fontSize: 13,
-  },
-  nptTypeIcon: {
-    width: '12px',
-    height: '12px',
-    borderRadius: '2px',
   },
   actionButton: {
     padding: '8px',
@@ -68,11 +65,53 @@ function formatNumber(value, precision) {
   return Number.isFinite(parseFloat(value)) ? parseFloat(value).toFixed(precision) : '-';
 }
 
+function formatType(color) {
+  if (color === 'lessons') {
+    return (
+      <div
+        style={{
+          background: '#3B3B3B',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <LessonsTypeIcon />
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        background: color,
+        marginLeft: '6px',
+        width: '12px',
+        height: '12px',
+        borderRadius: '2px',
+      }}
+    />
+  );
+}
+
+function formatDateTime(timestamp) {
+  return moment.unix(timestamp).format('MM/DD/YYYY HH:mm');
+}
+
 function formatCell(rowData, dataKey) {
   let result;
   switch (dataKey) {
-    case 'holeSize':
+    case 'type':
+      result = formatType(get(rowData, dataKey));
+      break;
+    case 'tvd':
       result = formatNumber(get(rowData, dataKey), 3);
+      break;
+    case 'startTime':
+    case 'endTime':
+      result = formatDateTime(get(rowData, dataKey));
       break;
     case 'link':
       result = '-';
@@ -146,59 +185,33 @@ function LearnTableRow({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {rowSettings.map(columnSettings => {
-        if (columnSettings.key === 'type') {
-          return (
-            <>
-              <TableCell
-                key={columnSettings.key}
-                className={classes.bodyCell}
-                style={getCellStyles(columnSettings.key)}
+      {rowSettings.map(columnSettings => (
+        <TableCell
+          key={columnSettings.key}
+          className={classes.bodyCell}
+          style={getCellStyles(columnSettings.key)}
+        >
+          {columnSettings.key === 'wellName' ? (
+            <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
+              <Typography
+                className={classes.tickCellValue}
+                component="a"
+                style={{ whiteSpace: 'nowrap', color: '#fff' }}
+                href={`/assets/${rowData.wellId}`}
               >
-                <div className={classes.nptTypeIcon} style={{ background: rowData.type }} />
-              </TableCell>
-            </>
-          );
-        } else if (columnSettings.key === 'wellName') {
-          return (
-            <>
-              <TableCell
-                key={columnSettings.key}
-                className={classes.bodyCell}
-                style={getCellStyles(columnSettings.key)}
-              >
-                <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
-                  <Typography
-                    className={classes.tickCellValue}
-                    component="a"
-                    style={{ whiteSpace: 'nowrap', color: '#fff' }}
-                    href={`/assets/${rowData.wellId}`}
-                  >
-                    {formatWellName(rowData.wellName, showWellFullName)}
-                  </Typography>
-                </Tooltip>
-              </TableCell>
-            </>
-          );
-        } else {
-          return (
-            <>
-              <TableCell
-                key={columnSettings.key}
-                className={classes.bodyCell}
-                style={getCellStyles(columnSettings.key)}
-              >
-                <Typography
-                  className={classes.bodyCellValue}
-                  style={getFontStyle(minMaxDict, rowData, columnSettings.key)}
-                >
-                  {formatCell(rowData, columnSettings.key)}
-                </Typography>
-              </TableCell>
-            </>
-          );
-        }
-      })}
+                {formatWellName(rowData.wellName, showWellFullName)}
+              </Typography>
+            </Tooltip>
+          ) : (
+            <Typography
+              className={classes.bodyCellValue}
+              style={getFontStyle(minMaxDict, rowData, columnSettings.key)}
+            >
+              {formatCell(rowData, columnSettings.key)}
+            </Typography>
+          )}
+        </TableCell>
+      ))}
 
       <TableCell className={classes.bodyCell}>
         <Tooltip title="More">

@@ -40,13 +40,13 @@ const handleFetchNptlist = async segment => {
   return sortedNptTypes;
 };
 
-export async function fetchNTPData(assetId) {
-  const nptTypes = await handleFetchNptlist('drilling');
+export async function fetchNptData(assetId) {
   const records = await getAppStorage('corva', 'data.npt-events', assetId, { limit: 0 });
-  const result = {
-    nptTypes,
-    records: sortBy(records, r => get(r, 'timestamp')),
-  };
+  return sortBy(records, r => get(r, 'timestamp'));
+}
+
+export async function fetchNptTypeData() {
+  const result = await handleFetchNptlist('drilling');
   return result;
 }
 

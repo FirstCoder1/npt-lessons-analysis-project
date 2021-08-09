@@ -1,6 +1,6 @@
-import { memo, useState, useEffect, useCallback, useMemo } from 'react';
+import { memo, useState, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { debounce, get } from 'lodash';
+import { get, uniq } from 'lodash';
 import { makeStyles } from '@material-ui/core';
 import { LoadingIndicator, EmptyView } from '@corva/ui/components';
 import { isNativeDetected, isMobileDetected } from '@corva/ui/utils/mobileDetect';
@@ -50,29 +50,26 @@ function LearnedApp(props) {
     savedDepthFilter,
     savedDateFilter,
     savedIsTutorialShown,
-    savedStepOutFilter,
     savedTableSettings,
     savedChartExpanded,
-    savedSortInfo,
     onSettingsChange,
   } = props;
 
   const classes = useStyles();
   const isMobile = isMobileDetected || isNativeDetected || coordinates.w <= 3;
-  const { companyId } = offsetSetting;
-
   const offsetWellIds = useMemo(() => {
     const selectedWellIds = [
+      get(well, 'asset_id'),
       ...(offsetSetting.addedWellIds || []),
       ...(get(offsetSetting, 'bicWellIds') || []),
     ];
-    return selectedWellIds;
-  }, [offsetSetting]);
+    return uniq(selectedWellIds);
+  }, [well, offsetSetting]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(!isMobile);
   const [eventKind, setEventKind] = useState(savedEvent);
   const [isNptLoading, nptData, nptTypeFilter, onChangeTypeFilter] = useFetchNptData(
-    get(well, 'asset_id'),
+    offsetWellIds,
     savedNptTypeFilter
   );
   const [
@@ -84,25 +81,15 @@ function LearnedApp(props) {
     onChangeOpFilter,
     lessonsFilter,
     onChangeLessonsFilter,
-  ] = useFetchLessonsData(
-    get(well, 'asset_id'),
-    savedLessonsFilter,
-    savedOpFilter,
-    savedDepthFilter
-  );
+  ] = useFetchLessonsData(offsetWellIds, savedLessonsFilter, savedOpFilter, savedDepthFilter);
   const [dateFilter, setDateFilter] = useState(savedDateFilter);
   const [tableSettings, setTableSettings] = useState(savedTableSettings);
   const [chartExpanded, setChartExpanded] = useState(savedChartExpanded);
   const [showTutorial, setShowTutorial] = useState(!savedIsTutorialShown);
   const [showWellFullName, setShowWellFullName] = useState(false);
-  const [loadingSettings, setLoadingSettings] = useState({
-    stepOutFilter: savedStepOutFilter,
-    sortInfo: savedSortInfo,
-  });
-  const { stepOutFilter, sortInfo } = loadingSettings;
 
   // NOTE: Fetch all the data for filtering
-  const initialData = useFetchInitialData(companyId, offsetWellIds);
+  const initialData = useFetchInitialData(get(offsetSetting, 'companyId'), offsetWellIds);
   const filteredWells = useMemo(() => {
     return initialData?.wells;
   }, [initialData]);
@@ -114,9 +101,7 @@ function LearnedApp(props) {
     lessonsFilter,
     opFilter,
     depthFilter,
-    stepOutFilter,
     dateFilter,
-    sortInfo,
     tableSettings,
     chartExpanded,
     onSettingsChange
@@ -127,12 +112,7 @@ function LearnedApp(props) {
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    setLoadingSettings(prev => {
-      return {
-        ...prev,
-        stepOutFilter: DEFAULT_SETTINGS.savedStepoutFilter,
-      };
-    });
+    console.log('clear');
   }, []);
 
   const handleChangeChartExpanded = useCallback(() => {
@@ -202,7 +182,6 @@ function LearnedApp(props) {
               offsetWells={initialData?.wells}
               tableSettings={tableSettings}
               chartExpanded={chartExpanded}
-              sortInfo={sortInfo}
               showWellFullName={showWellFullName}
               onChangeShowWellFullName={handleChangeShowWellFullName}
               onChangeTableSettings={setTableSettings}
@@ -235,11 +214,11 @@ function LearnedApp(props) {
 }
 
 LearnedApp.propTypes = {
+  well: PropTypes.shape({}).isRequired,
   coordinates: PropTypes.shape({
     w: PropTypes.number.isRequired,
   }).isRequired,
   offsetSetting: PropTypes.shape({
-    companyId: PropTypes.number.isRequired,
     addedWellIds: PropTypes.shape([]).isRequired,
     bicWellIds: PropTypes.shape([]).isRequired,
     bicManualWellIds: PropTypes.shape([]).isRequired,
@@ -251,10 +230,8 @@ LearnedApp.propTypes = {
   savedOpFilter: PropTypes.shape([]),
   savedDepthFilter: PropTypes.shape({}),
   savedDateFilter: PropTypes.shape([]),
-  savedStepOutFilter: PropTypes.arrayOf(PropTypes.number),
   savedTableSettings: PropTypes.arrayOf(PropTypes.shape({})),
   savedChartExpanded: PropTypes.bool,
-  savedSortInfo: PropTypes.shape({}),
   onSettingsChange: PropTypes.func.isRequired,
 };
 
@@ -266,10 +243,8 @@ LearnedApp.defaultProps = {
   savedOpFilter: [],
   savedDepthFilter: {},
   savedDateFilter: [null, null],
-  savedStepOutFilter: DEFAULT_SETTINGS.savedStepOutFilter,
   savedTableSettings: DEFAULT_SETTINGS.savedTableSettings,
   savedChartExpanded: DEFAULT_SETTINGS.savedChartExpanded,
-  savedSortInfo: DEFAULT_SETTINGS.savedSortInfo,
 };
 
 export default memo(LearnedApp);

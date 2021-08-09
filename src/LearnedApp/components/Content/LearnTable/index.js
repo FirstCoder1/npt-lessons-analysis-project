@@ -66,7 +66,6 @@ function LearnTable({
   showWellFullName,
   onChangeShowWellFullName,
   tableSettings,
-  sortInfo,
   onMouseEvent,
   onChangeSortInfo,
 }) {
@@ -96,23 +95,9 @@ function LearnTable({
   }, [data]);
 
   const handleClickHeaderCell = column => {
-    if (!column.sortable) {
-      return;
-    }
-
-    if (sortInfo.key === column.key) {
-      onChangeSortInfo({
-        ...sortInfo,
-        direction: sortInfo.direction === 'asc' ? 'desc' : 'asc',
-      });
-    } else {
-      onChangeSortInfo({
-        key: column.key,
-        direction: 'asc',
-      });
-    }
+    console.log('handleClickHeaderCell');
   };
-console.log('data=', data);
+console.log('tableData=', data);
   return (
     <>
       <Table aria-label="npt table">
@@ -134,16 +119,6 @@ console.log('data=', data);
                 >
                   <span className={classes.headerCellInnerContent}>
                     {columnSettings.label}
-                    {/* {columnSettings.unitType ? getUnit(columnSettings.key) : ''} song */}
-                    {columnSettings.key === sortInfo.key && (
-                      <>
-                        {sortInfo.direction === 'asc' ? (
-                          <ArrowUpwardIcon className={classes.sortIcon} />
-                        ) : (
-                          <ArrowDownwardIcon className={classes.sortIcon} />
-                        )}
-                      </>
-                    )}
                   </span>
 
                   {columnSettings.key === 'wellName' && (
@@ -193,10 +168,6 @@ LearnTable.propTypes = {
   }).isRequired,
   data: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
-  sortInfo: PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    direction: PropTypes.string.isRequired,
-  }).isRequired,
   onChangeSortInfo: PropTypes.func.isRequired,
   onMouseEvent: PropTypes.func.isRequired,
 };

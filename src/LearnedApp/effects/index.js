@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
-import { debounce, uniq, get, minBy, maxBy, isEqual } from 'lodash';
+import { debounce, uniq, get, minBy, maxBy, isEqual, union } from 'lodash';
 
 import {
-  fetchNTPData,
+  fetchNptData,
+  fetchNptTypeData,
   fetchLessonsData,
   fetchLessonsCause,
   fetchLessonsSeverity,
@@ -13,15 +14,15 @@ import {
 
 import { MAX_OFFSETS_SUPPORTED } from '../constants';
 
-export function useFetchNptData(assetId, savedNptTypeFilter) {
+export function useFetchNptData(wellIds, savedNptTypeFilter) {
   const [isLoading, setIsLoading] = useState(false);
   const [nptData, setNptData] = useState([]);
   const [nptTypeFilter, setNptTypeData] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
-      const result = await fetchNTPData(assetId);
-      const typeData = result?.nptTypes.map(item => {
+      const nptTypes = await fetchNptTypeData();
+      const typeData = nptTypes.map(item => {
         return {
           key: item.value,
           title: item.label,
@@ -29,24 +30,31 @@ export function useFetchNptData(assetId, savedNptTypeFilter) {
           checked: true,
         };
       });
-
-      setNptData(result.records);
       if (!savedNptTypeFilter) {
         setNptTypeData(typeData);
       } else {
         setNptTypeData(savedNptTypeFilter);
       }
 
+      const allResult = await Promise.all(wellIds.map(assetId => fetchNptData(assetId)));
+      const records = [];
+      allResult.forEach(result =>
+        result.forEach(item => {
+          records.push(item);
+        })
+      );
+      setNptData(records);
+
       setIsLoading(true);
     }
 
     fetchData();
-  }, [assetId, savedNptTypeFilter]);
+  }, [wellIds]);
 
   return [isLoading, nptData, nptTypeFilter, setNptTypeData];
 }
 
-export function useFetchLessonsData(assetId, savedLessonsFilter, savedOpFilter, savedDepthFilter) {
+export function useFetchLessonsData(wellIds, savedLessonsFilter, savedOpFilter, savedDepthFilter) {
   const [isLoading, setIsLoading] = useState(false);
   const [lessonsRecord, setLessonRecord] = useState(null);
   const [lessonsFilterData, setLessonsFilterData] = useState(null);
@@ -55,8 +63,16 @@ export function useFetchLessonsData(assetId, savedLessonsFilter, savedOpFilter, 
 
   useEffect(() => {
     async function fetchData() {
-      const [record, causeRes, severityRes, topicRes] = await Promise.all([
-        fetchLessonsData(assetId),
+      const allResult = await Promise.all(wellIds.map(assetId => fetchLessonsData(assetId)));
+      const record = [];
+      allResult.forEach(result =>
+        result.forEach(item => {
+          record.push(item);
+        })
+      );
+      setLessonRecord(record);
+
+      const [causeRes, severityRes, topicRes] = await Promise.all([
         fetchLessonsCause(),
         fetchLessonsSeverity(),
         fetchLessonsTopic(),
@@ -66,7 +82,6 @@ export function useFetchLessonsData(assetId, savedLessonsFilter, savedOpFilter, 
       const severityList = ['All'].concat(severityRes.items.map(item => item.name).sort());
       const causeList = ['All'].concat(causeRes.items.map(item => item.name).sort());
 
-      setLessonRecord(record);
       if (
         savedLessonsFilter?.length > 0 &&
         isEqual(savedLessonsFilter[0].array, topicList) &&
@@ -186,7 +201,7 @@ export function useFetchLessonsData(assetId, savedLessonsFilter, savedOpFilter, 
     }
 
     fetchData();
-  }, [assetId, savedLessonsFilter, savedOpFilter, savedDepthFilter]);
+  }, [wellIds]);
 
   return [
     isLoading,
@@ -249,9 +264,7 @@ export const useSaveSettings = (
   lessonsFilter,
   opFilter,
   depthFilter,
-  stepOutFilter,
   dateFilter,
-  sortInfo,
   tableSettings,
   chartExpanded,
   onSettingsChange
@@ -266,8 +279,6 @@ export const useSaveSettings = (
       savedOpFilter: opFilter,
       savedDepthFilter: depthFilter,
       savedDateFilter: dateFilter,
-      savedStepOutFilter: stepOutFilter,
-      savedSortInfo: sortInfo,
       savedTableSettings: tableSettings,
       savedChartExpanded: chartExpanded,
     });
@@ -289,9 +300,7 @@ export const useSaveSettings = (
     lessonsFilter,
     opFilter,
     depthFilter,
-    stepOutFilter,
     dateFilter,
-    sortInfo,
     tableSettings,
     chartExpanded,
   ]);

@@ -122,6 +122,7 @@ export const TABLE_LIST = [
     key: 'type',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 40,
   },
   {
@@ -129,6 +130,7 @@ export const TABLE_LIST = [
     key: 'wellName',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 230,
   },
   {
@@ -136,6 +138,7 @@ export const TABLE_LIST = [
     key: 'rigName',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 100,
   },
   {
@@ -143,6 +146,7 @@ export const TABLE_LIST = [
     key: 'detail',
     kind: TABLE_KIND.none,
     active: false,
+    show: false,
     width: 100,
   },
   {
@@ -150,6 +154,7 @@ export const TABLE_LIST = [
     key: 'party',
     kind: TABLE_KIND.none,
     active: false,
+    show: false,
     width: 100,
   },
   {
@@ -157,27 +162,31 @@ export const TABLE_LIST = [
     key: 'company',
     kind: TABLE_KIND.none,
     active: false,
+    show: false,
     width: 80,
   },
   {
     label: 'Topic',
     key: 'topic',
     kind: TABLE_KIND.lessons,
-    active: true,
+    active: false,
+    show: false,
     width: 80,
   },
   {
     label: 'Severity',
     key: 'severity',
     kind: TABLE_KIND.lessons,
-    active: true,
+    active: false,
+    show: false,
     width: 80,
   },
   {
     label: 'Cause',
     key: 'cause',
     kind: TABLE_KIND.lessons,
-    active: true,
+    active: false,
+    show: false,
     width: 80,
   },
   {
@@ -185,34 +194,39 @@ export const TABLE_LIST = [
     key: 'description',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 300,
   },
   {
     label: 'Hole Section',
     key: 'holeSection',
-    kind: TABLE_KIND.lessons,
+    kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 80,
   },
   {
     label: 'Operation',
     key: 'operation',
-    kind: TABLE_KIND.lessons,
+    kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 80,
   },
   {
     label: 'TVD',
     key: 'tvd',
-    kind: TABLE_KIND.lessons,
+    kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 80,
   },
   {
     label: 'Phase',
     key: 'phase',
-    kind: TABLE_KIND.lessons,
+    kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 80,
   },
   {
@@ -220,6 +234,7 @@ export const TABLE_LIST = [
     key: 'startTime',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 80,
   },
   {
@@ -227,6 +242,7 @@ export const TABLE_LIST = [
     key: 'endTime',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 80,
   },
   {
@@ -234,6 +250,7 @@ export const TABLE_LIST = [
     key: 'link',
     kind: TABLE_KIND.all,
     active: true,
+    show: true,
     width: 40,
   },
 ];
@@ -266,9 +283,5 @@ export const DEFAULT_SETTINGS = {
       },
     ];
   }, []),
-  savedSortInfo: {
-    key: metrics.rop_rotary.key,
-    direction: 'asc',
-  },
   savedOffsetSetting: {},
 };
