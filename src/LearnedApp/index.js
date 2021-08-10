@@ -68,7 +68,7 @@ function LearnedApp(props) {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(!isMobile);
   const [eventKind, setEventKind] = useState(savedEvent);
-  const [isNptLoading, nptData, nptTypeFilter, onChangeTypeFilter] = useFetchNptData(
+  const [isNptLoading, nptData, nptTypeFilter, setNptTypeFilter] = useFetchNptData(
     offsetWellIds,
     savedNptTypeFilter
   );
@@ -76,11 +76,11 @@ function LearnedApp(props) {
     isLessonsLoading,
     lessonsData,
     depthFilter,
-    onChangeDepthFilter,
+    setDepthFilter,
     opFilter,
-    onChangeOpFilter,
+    setOpFilter,
     lessonsFilter,
-    onChangeLessonsFilter,
+    setLessonsFilter,
   ] = useFetchLessonsData(offsetWellIds, savedLessonsFilter, savedOpFilter, savedDepthFilter);
   const [dateFilter, setDateFilter] = useState(savedDateFilter);
   const [tableSettings, setTableSettings] = useState(savedTableSettings);
@@ -111,9 +111,30 @@ function LearnedApp(props) {
     setIsDrawerOpen(prev => !prev);
   }, []);
 
-  const handleClearFilters = useCallback(() => {
+  const handleClearFilters = () => {
+    setEventKind(TABLE_KIND.npt);
+    setNptTypeFilter(nptTypeFilter?.map(item => ({ ...item, checked: true })));
+    setLessonsFilter(lessonsFilter?.map(item => ({ ...item, value: 'All' })));
+    setOpFilter(
+      opFilter?.map(item =>
+        item.key === 'depth' ? { ...item, value: 'Measured Depth' } : { ...item, value: 'All' }
+      )
+    );
+    setDepthFilter({
+      'Measured Depth': {
+        ...get(depthFilter, 'Measured Depth'),
+        startRange: get(depthFilter, ['Measured Depth', 'start']),
+        endRange: get(depthFilter, ['Measured Depth', 'end']),
+      },
+      'True Vertical Depth': {
+        ...get(depthFilter, 'True Vertical Depth'),
+        startRange: get(depthFilter, ['True Vertical Depth', 'start']),
+        endRange: get(depthFilter, ['True Vertical Depth', 'end']),
+      },
+    });
+    setDateFilter([]);
     console.log('clear');
-  }, []);
+  };
 
   const handleChangeChartExpanded = useCallback(() => {
     setChartExpanded(prev => !prev);
@@ -158,10 +179,10 @@ function LearnedApp(props) {
           tableSettings={tableSettings}
           onChangeEventKind={setEventKind}
           onChangeTableSettings={setTableSettings}
-          onChangeTypeFilter={onChangeTypeFilter}
-          onChangeLessonsFilter={onChangeLessonsFilter}
-          onChangeOpFilter={onChangeOpFilter}
-          onChangeDepthFilter={onChangeDepthFilter}
+          onChangeTypeFilter={setNptTypeFilter}
+          onChangeLessonsFilter={setLessonsFilter}
+          onChangeOpFilter={setOpFilter}
+          onChangeDepthFilter={setDepthFilter}
           onChangeDateFilter={setDateFilter}
         />
       </Drawer>

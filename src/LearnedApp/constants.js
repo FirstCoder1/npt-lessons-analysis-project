@@ -1,7 +1,3 @@
-import { metricsUtils } from '@corva/ui/utils';
-
-const metrics = metricsUtils.default;
-
 export const MAX_OFFSETS_SUPPORTED = 400;
 
 export const TABLE_KIND = {

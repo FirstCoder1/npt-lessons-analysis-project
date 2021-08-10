@@ -16,6 +16,7 @@ import {
 import { MoreVert as MoreVertIcon } from '@material-ui/icons';
 
 import LessonsTypeIcon from './LessonsTypeIcon';
+import Description from './Description';
 import { HIGHLIGHTING_METRICS, LOW_VALUE_GOOD_METRICS } from '../../../constants';
 
 const useStyles = makeStyles({
@@ -26,11 +27,21 @@ const useStyles = makeStyles({
   },
   bodyCell: {
     padding: '8px 0 8px 10px',
-    background: '#201f1f',
+    background: '#202020',
   },
-  tickCellValue: {
-    fontSize: 13,
-    position: 'sticky',
+  tickCellValue: ({ showWellFullName }) => {
+    if (showWellFullName) {
+      return {
+        fontSize: 13,
+        position: 'sticky',
+        marginRight: '8px',
+      };
+    } else {
+      return {
+        fontSize: 13,
+        position: 'sticky',
+      };
+    }
   },
   bodyCellValue: {
     fontSize: 13,
@@ -96,11 +107,23 @@ function formatType(color) {
   );
 }
 
+function formatDescription(row, text, isMore, onClickMore) {
+  const handleClickMoreButton = () => {
+    onClickMore(row);
+  };
+
+  return (
+    <div>
+      <Description text={text} isMore={isMore} onClickMore={handleClickMoreButton} />
+    </div>
+  );
+}
+
 function formatDateTime(timestamp) {
   return moment.unix(timestamp).format('MM/DD/YYYY HH:mm');
 }
 
-function formatCell(rowData, dataKey) {
+function formatCell(rowData, dataKey, isMore, onClickMore) {
   let result;
   switch (dataKey) {
     case 'type':
@@ -116,6 +139,9 @@ function formatCell(rowData, dataKey) {
     case 'link':
       result = '-';
       break;
+    case 'description':
+      result = formatDescription(rowData, get(rowData, dataKey), isMore, onClickMore);
+      break;
     default:
       result = get(rowData, dataKey) || '-';
   }
@@ -126,14 +152,14 @@ function formatWellName(wellName, showWellFullName) {
   if (showWellFullName) {
     return wellName;
   }
-  return wellName.length > 20 ? `${wellName.slice(0, 20)}...` : wellName;
+  return wellName.length > 26 ? `${wellName.slice(0, 26)}...` : wellName;
 }
 
 function formatWellNameTooltip(wellName, showWellFullName) {
   if (showWellFullName) {
     return '';
   }
-  return wellName.length > 20 ? wellName : '';
+  return wellName.length > 26 ? wellName : '';
 }
 
 const debouncedMouseEvent = debounce((data, cb) => cb(data), 500);
@@ -145,9 +171,10 @@ function LearnTableRow({
   minMaxDict,
   onMouseEvent,
   onRemove,
+  handleClickMoreCell,
   getCellStyles,
 }) {
-  const classes = useStyles();
+  const classes = useStyles({ showWellFullName });
   const rowStyle = { background: '#2c2c2c' };
   const [actionAnchorEl, setActionAnchorEl] = useState(null);
 
@@ -173,12 +200,12 @@ function LearnTableRow({
   };
 
   const handleRemove = () => {
-    onRemove(rowData.wellId, rowData.bhaId);
     setActionAnchorEl(null);
   };
+
   return (
     <TableRow
-      id={`${rowData.wellId}-${rowData.bhaId}`}
+      id={`${rowData.wellId}`}
       tabIndex={0}
       className={classes.tableRow}
       style={rowStyle}
@@ -189,7 +216,7 @@ function LearnTableRow({
         <TableCell
           key={columnSettings.key}
           className={classes.bodyCell}
-          style={getCellStyles(columnSettings.key)}
+          style={getCellStyles(columnSettings.key, 2)}
         >
           {columnSettings.key === 'wellName' ? (
             <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
@@ -207,7 +234,7 @@ function LearnTableRow({
               className={classes.bodyCellValue}
               style={getFontStyle(minMaxDict, rowData, columnSettings.key)}
             >
-              {formatCell(rowData, columnSettings.key)}
+              {formatCell(rowData, columnSettings.key, rowData.isMore, handleClickMoreCell)}
             </Typography>
           )}
         </TableCell>
@@ -245,17 +272,16 @@ function LearnTableRow({
 LearnTableRow.propTypes = {
   showWellFullName: PropTypes.bool.isRequired,
   rowData: PropTypes.shape({
-    wellId: PropTypes.number.isRequired,
-    drillstring: PropTypes.shape({}).isRequired,
-    wellName: PropTypes.string.isRequired,
-    bhaId: PropTypes.number.isRequired,
-    schematic: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
-    type: PropTypes.string.isRequired,
+    wellId: PropTypes.number,
+    wellName: PropTypes.string,
+    type: PropTypes.string,
+    isMore: PropTypes.bool,
   }).isRequired,
   rowSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   minMaxDict: PropTypes.shape({}).isRequired,
   onMouseEvent: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
+  handleClickMoreCell: PropTypes.func.isRequired,
   getCellStyles: PropTypes.func.isRequired,
 };
 

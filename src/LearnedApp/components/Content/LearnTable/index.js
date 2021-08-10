@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { get } from 'lodash';
 import {
@@ -12,8 +12,6 @@ import {
 } from '@material-ui/core';
 
 import {
-  ArrowDownward as ArrowDownwardIcon,
-  ArrowUpward as ArrowUpwardIcon,
   KeyboardArrowRight as ArrowRightIcon,
   KeyboardArrowLeft as ArrowLeftIcon,
 } from '@material-ui/icons';
@@ -24,11 +22,14 @@ import LearnTableRow from './LearnTableRow';
 const useStyles = makeStyles({
   headerCell: {
     padding: '6px 0 6px 10px',
-    background: '#201f1f',
+    background: '#202020',
     borderTop: '1px solid #5C5C5C',
     color: '#9e9e9e',
     fontSize: '12px',
     lineHeight: '14px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
   },
   headerCellContent: {
     display: 'flex',
@@ -43,7 +44,7 @@ const useStyles = makeStyles({
   },
   sortIcon: {
     cursor: 'pointer',
-    fontSize: '12px',
+    fontSize: '16px',
     '&:hover': {
       color: '#fff',
     },
@@ -51,11 +52,11 @@ const useStyles = makeStyles({
   },
 });
 
-function getCellStyles(key) {
+function getCellStyles(key, zIndex) {
   if (key === 'type') {
-    return { left: 0, position: 'sticky' };
+    return { left: 0, position: 'sticky', zIndex };
   } else if (key === 'wellName') {
-    return { left: '40px', position: 'sticky', boxShadow: '5px 0px 5px grey' };
+    return { left: '40px', position: 'sticky', boxShadow: '5px 0px 5px #1b1b1b', zIndex };
   }
   return {};
 }
@@ -67,16 +68,19 @@ function LearnTable({
   onChangeShowWellFullName,
   tableSettings,
   onMouseEvent,
-  onChangeSortInfo,
 }) {
-  const tableColumns = tableSettings.filter(column => column.show);
   const classes = useStyles({
     isLightTheme: theme.isLightTheme,
   });
+  const [tableData, setTableData] = useState([]);
+  const tableColumns = tableSettings.filter(column => column.show);
+  useEffect(() => {
+    setTableData(data);
+  }, [data]);
 
   const minMaxDict = useMemo(() => {
     const result = {};
-    data.forEach(record => {
+    tableData.forEach(record => {
       HIGHLIGHTING_METRICS.forEach(key => {
         if (!result[key] && Number.isFinite(get(record, key))) {
           result[key] = {
@@ -92,34 +96,39 @@ function LearnTable({
       });
     });
     return result;
-  }, [data]);
+  }, [tableData]);
 
   const handleClickHeaderCell = column => {
-    console.log('handleClickHeaderCell');
+    console.log('handleClickHeaderCell=', column);
   };
-console.log('tableData=', data);
+
+  const handleClickMoreCell = row => {
+    const data = tableData.map(item =>
+      item.id === row.id ? { ...item, isMore: !item.isMore } : item
+    );
+    setTableData(data);
+  };
+  console.log('tableData=', tableData);
   return (
     <>
-      <Table aria-label="npt table">
+      <Table aria-label="npt table" style={{ borderCollapse: 'separate' }}>
         <TableHead>
           <TableRow>
             {tableColumns.map(columnSettings => (
               <TableCell
                 key={columnSettings.key}
                 className={classes.headerCell}
-                style={getCellStyles(columnSettings.key)}
+                style={getCellStyles(columnSettings.key, 3)}
               >
                 <div
                   className={classes.headerCellContent}
                   onClick={() => handleClickHeaderCell(columnSettings)}
                   style={{
                     cursor: columnSettings.sortable ? 'pointer' : 'auto',
-                    width: columnSettings.width - 10,
+                    minWidth: columnSettings.width - 10,
                   }}
                 >
-                  <span className={classes.headerCellInnerContent}>
-                    {columnSettings.label}
-                  </span>
+                  <span className={classes.headerCellInnerContent}>{columnSettings.label}</span>
 
                   {columnSettings.key === 'wellName' && (
                     <>
@@ -143,7 +152,7 @@ console.log('tableData=', data);
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.map(rowData => (
+          {tableData.map(rowData => (
             <LearnTableRow
               key={`${rowData.wellId}-${rowData.bhaId}`}
               showWellFullName={showWellFullName}
@@ -151,6 +160,7 @@ console.log('tableData=', data);
               rowSettings={tableColumns}
               minMaxDict={minMaxDict}
               onMouseEvent={onMouseEvent}
+              handleClickMoreCell={handleClickMoreCell}
               getCellStyles={getCellStyles}
             />
           ))}
@@ -168,7 +178,6 @@ LearnTable.propTypes = {
   }).isRequired,
   data: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
-  onChangeSortInfo: PropTypes.func.isRequired,
   onMouseEvent: PropTypes.func.isRequired,
 };
 

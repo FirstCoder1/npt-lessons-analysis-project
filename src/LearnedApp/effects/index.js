@@ -30,10 +30,10 @@ export function useFetchNptData(wellIds, savedNptTypeFilter) {
           checked: true,
         };
       });
-      if (!savedNptTypeFilter) {
-        setNptTypeData(typeData);
-      } else {
+      if (savedNptTypeFilter?.length === typeData.length) {
         setNptTypeData(savedNptTypeFilter);
+      } else {
+        setNptTypeData(typeData);
       }
 
       const allResult = await Promise.all(wellIds.map(assetId => fetchNptData(assetId)));
@@ -270,7 +270,6 @@ export const useSaveSettings = (
   onSettingsChange
 ) => {
   const initialLoadingRef = useRef(true);
-
   const storeAppSettings = () => {
     onSettingsChange({
       savedEvent: eventKind,

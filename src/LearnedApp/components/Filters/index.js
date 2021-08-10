@@ -236,7 +236,7 @@ function Filters({
               onChange={e => handleOperationalSelect(item.key, e.target.value)}
             />
           ))}
-          {depthFilter && opFilter.length === 4 && (
+          {depthFilter && opFilter?.length === 4 && (
             <>
               <RangeSlider
                 title={`Start Depth ${get(depthFilter, [opFilter[3].value, 'unit'])}`}

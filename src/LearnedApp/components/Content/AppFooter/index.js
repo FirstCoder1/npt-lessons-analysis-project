@@ -59,7 +59,7 @@ function AppFooter({ isDrawerOpen }) {
     <div className={classes.footer}>
       {timestamp && (
         <Typography variant="body2" className={classes.lastUpdate}>
-          Last update: {formatTimestamp(timestamp, 'M/D/yyyy h:mm a')}
+          Last update: {formatTimestamp(timestamp, 'MM/DD/YYYY hh:mm a')}
         </Typography>
       )}
     </div>

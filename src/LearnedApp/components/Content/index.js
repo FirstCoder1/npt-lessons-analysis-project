@@ -81,29 +81,29 @@ function Content({
 }) {
   const [mapExpanded, setMapExpanded] = useState(true);
   const [showChartView, setShowChartView] = useState(true);
-  const [activeBha, setActiveBha] = useState({});
   const [isOpenSettingsPopover, setIsOpenSettingsPopover] = useState(false);
   const classes = useStyles({ isMobile });
   const filteredData = useMemo(() => {
     const data = [];
-    const startTimeStamp = dateFilter[0] !== null ? new Date(dateFilter[0]).getTime() / 1000 : 0;
-    const endTimeStamp =
-      dateFilter[1] !== null ? new Date(dateFilter[1]).getTime() / 1000 : 32503651199;
+    const startTimeStamp = new Date(dateFilter[0]).getTime() / 1000 || 0;
+    const endTimeStamp = new Date(dateFilter[1]).getTime() / 1000 || 4294967295;
+    let counter = 0;
     // Filter NPT data
     // eslint-disable-next-line no-bitwise
     if (eventKind & TABLE_KIND.npt) {
       nptData?.forEach(row => {
         const typeChecked = get(
-          nptTypeFilter.find(item => item.key === get(row, ['data', 'type'])),
+          nptTypeFilter?.find(item => item.key === get(row, ['data', 'type'])),
           'checked'
         );
 
         const dateChecked =
           get(row, ['data', 'start_time']) >= startTimeStamp &&
           get(row, ['data', 'start_time']) <= endTimeStamp;
-
         if (typeChecked && dateChecked) {
+          counter += 1
           data.push({
+            id: counter,
             wellName: get(
               offsetWells.find(well => well.id === get(row, 'asset_id')),
               'name'
@@ -120,6 +120,7 @@ function Content({
             tvd: get(row, ['data', 'depth']),
             startTime: get(row, ['data', 'start_time']),
             endTime: get(row, ['data', 'end_time']),
+            isMore: true,
           });
         }
       });
@@ -149,22 +150,24 @@ function Content({
         const startRange = get(depthFilter, [get(opFilter[3], 'value'), 'startRange']);
         const endRange = get(depthFilter, [get(opFilter[3], 'value'), 'endRange']);
         const [startKey, endKey] =
-          opFilter && get(opFilter[3], 'value') === 'Measured Depth'
+          opFilter?.length === 4 && get(opFilter[3], 'value') === 'Measured Depth'
             ? ['md_start', 'md_end']
             : ['tvd_start', 'tvd_end'];
-        const depthChecked = opFilter
-          ? get(row, ['data', startKey]) >= startRange[0] &&
-            get(row, ['data', startKey]) <= startRange[1] &&
-            get(row, ['data', endKey]) >= endRange[0] &&
-            get(row, ['data', endKey]) <= endRange[1]
-          : true;
-
+        const depthChecked =
+          opFilter?.length === 4
+            ? get(row, ['data', startKey]) >= startRange[0] &&
+              get(row, ['data', startKey]) <= startRange[1] &&
+              get(row, ['data', endKey]) >= endRange[0] &&
+              get(row, ['data', endKey]) <= endRange[1]
+            : true;
         const dateChecked =
           get(row, ['data', 'start_time']) >= startTimeStamp &&
           get(row, ['data', 'start_time']) <= endTimeStamp;
 
         if (lessonsChecked && opChecked && depthChecked && dateChecked) {
+          counter += 1;
           data.push({
+            id: counter,
             wellName: get(
               offsetWells.find(well => well.id === get(row, 'asset_id')),
               'name'
@@ -184,6 +187,7 @@ function Content({
             phase: get(row, ['data', 'phase']),
             startTime: get(row.data, 'start_time'),
             endTime: get(row.data, 'end_time'),
+            isMore: true,
           });
         }
       });
@@ -200,8 +204,8 @@ function Content({
     dateFilter,
   ]);
 
-  const handleMouseEvent = useCallback(newActiveBha => {
-    setActiveBha(newActiveBha);
+  const handleMouseEvent = useCallback(newActiveWell => {
+    console.log('activeWell=', newActiveWell);
   }, []);
 
   const handleOpenSettingsPopover = useCallback(() => {
@@ -257,13 +261,13 @@ function Content({
           <WellsMap wells={offsetWells} offsetWells={offsetWells} activeWellId={null} />
         </div>
       )}
+
       <TableContainer className={classes.tableWrapper}>
         <LearnTable
           showWellFullName={showWellFullName}
           onChangeShowWellFullName={onChangeShowWellFullName}
           data={filteredData}
           tableSettings={tableSettings}
-          activeBha={activeBha}
           onMouseEvent={handleMouseEvent}
         />
       </TableContainer>
